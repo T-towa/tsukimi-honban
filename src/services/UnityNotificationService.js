@@ -1,7 +1,9 @@
 // Unity通知サービス
 class UnityNotificationService {
   constructor() {
-    this.unityServerUrl = process.env.REACT_APP_UNITY_SERVER_URL || 'http://localhost:3002';
+    // 本番環境では同じサーバーを使用、開発環境ではlocalhost:3002
+    this.unityServerUrl = process.env.REACT_APP_UNITY_SERVER_URL ||
+      (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:3002');
     this.enabled = process.env.REACT_APP_UNITY_INTEGRATION_ENABLED === 'true';
   }
 
