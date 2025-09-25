@@ -2,6 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+// Node.js 18以降でfetchが利用可能であることを確認
+if (typeof fetch === 'undefined') {
+  const { fetch } = require('undici');
+  global.fetch = fetch;
+}
+
 const app = express();
 
 // CORS設定
