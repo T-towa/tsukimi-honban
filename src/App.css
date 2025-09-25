@@ -1,0 +1,79 @@
+/* Global styles for PWA */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #312E81 0%, #7C3AED 50%, #312E81 100%);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.App {
+  height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+/* PWA optimization */
+@media (display-mode: standalone) {
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  input, textarea, button {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+
+/* Touch-friendly interactions */
+button, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#312E81" />
+    <meta name="description" content="月歌生成アプリケーション - 金澤月見光路イベント。月のかぐや姫へ想いを届ける5-7-5短詩を生成。" />
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="月歌" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="%PUBLIC_URL%" />
+    <meta property="og:title" content="月歌 -つきうた- 金澤月見光路" />
+    <meta property="og:description" content="月のかぐや姫へ想いを届ける月歌生成アプリ。あなたの感想から美しい5-7-5短詩を作成します。" />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="%PUBLIC_URL%" />
+    <meta property="twitter:title" content="月歌 -つきうた- 金澤月見光路" />
+    <meta property="twitter:description" content="月のかぐや姫へ想いを届ける月歌生成アプリ。あなたの感想から美しい5-7-5短詩を作成します。" />
+    <meta property="twitter:image" content="%PUBLIC_URL%/logo512.png" />
+
+    <title>月歌 -つきうた- 金澤月見光路</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'serif': ['Noto Serif JP', 'serif'],
+            },
+            animation: {
+              'fade-in': 'fadeIn 1s ease-out',
+              'pulse-slow': 'pulse 3s ease-in-out infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>このアプリケーションを実行するにはJavaScriptを有効にしてください。</noscript>
+    <div id="root"></div>
+  </body>
+</html>
