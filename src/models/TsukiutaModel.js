@@ -168,25 +168,81 @@ class TsukiutaModel {
     }
   }
 
-  // Claude APIで月歌生成（プロキシサーバー経由）
+  // Claude APIで月歌生成（直接API呼び出し）
   async generateTsukiuta(feelings) {
+    if (!this.claudeApiKey) {
+      throw new Error('Claude API キーが設定されていません');
+    }
+
     try {
-      // プロキシサーバー経由でClaude APIを呼び出す
-      const response = await fetch('http://localhost:3001/api/generate-tsukiuta', {
+      // 感想を統合したプロンプトを作成
+      const feelingsText = feelings.join('、');
+      const prompt = `金沢の月見光路での体験について、以下の感想をもとに日本の短詩「月歌」を生成してください：
+
+感想: ${feelingsText}
+
+出力は必ず以下のJSON形式で返してください：
+{
+  "impression": "${feelingsText}",
+  "tsukiuta": "5-7-5の月歌全体",
+  "line1": "最初の句（5音）",
+  "line2": "中の句（7音）",
+  "line3": "最後の句（5音）",
+  "syllables_line1": 5,
+  "syllables_line2": 7,
+  "syllables_line3": 5,
+  "reading": "ひらがなの読み方"
+}
+
+月歌は日本の伝統的な詩形で、自然や季節、心情を美しく表現します。金沢の美しい月見と秋の情景を込めて作成してください。`;
+
+      // Claude APIを直接呼び出し
+      const response = await fetch(this.claudeApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': this.claudeApiKey,
+          'anthropic-version': '2023-06-01'
         },
-        body: JSON.stringify({ feelings })
+        body: JSON.stringify({
+          model: this.claudeModel,
+          max_tokens: 1000,
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+        })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API Error:', errorData);
-        throw new Error(errorData.error || '月歌の生成に失敗しました');
+        console.error('Claude API Error:', errorData);
+        throw new Error(errorData.error?.message || '月歌の生成に失敗しました');
       }
 
-      const result = await response.json();
+      const apiResult = await response.json();
+      console.log('Claude API Response:', apiResult);
+
+      // レスポンスからテキストを抽出
+      const content = apiResult.content?.[0]?.text;
+      if (!content) {
+        throw new Error('APIからの応答が無効です');
+      }
+
+      // JSONパース
+      let result;
+      try {
+        // JSONブロックから抽出を試行
+        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
+        const jsonText = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
+        result = JSON.parse(jsonText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('生成された月歌の形式が正しくありません');
+      }
+
       console.log('月歌生成成功:', result);
 
       // ローカルにも保存
@@ -195,9 +251,6 @@ class TsukiutaModel {
       return result;
     } catch (error) {
       console.error('Error generating tsukiuta:', error);
-      if (error.message === 'Failed to fetch') {
-        throw new Error('サーバーに接続できません。server.jsが起動していることを確認してください。');
-      }
       throw error;
     }
   }
