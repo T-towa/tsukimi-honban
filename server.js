@@ -26,21 +26,41 @@ app.use(express.static(path.join(__dirname, 'build')));
 // Unity WebSocket サーバー設定
 const wss = new WebSocket.Server({
   server: server,
-  path: '/unity'
+  path: '/unity',
+  // Cloud Run最適化設定
+  perMessageDeflate: false,
+  maxPayload: 1024 * 1024, // 1MB
+  clientTracking: true,
+  verifyClient: (info) => {
+    console.log('WebSocket connection attempt from:', info.origin, info.req.url);
+    return true;
+  }
 });
 
 wss.on('connection', (ws, req) => {
-  console.log('Unity client connected:', req.socket.remoteAddress);
+  const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const userAgent = req.headers['user-agent'];
+  console.log(`Unity client connected from ${clientIP}, User-Agent: ${userAgent}`);
 
   // Unity クライアントとして登録
   unityClients.add(ws);
 
-  // 接続確認メッセージを送信
-  ws.send(JSON.stringify({
-    type: 'CONNECTION_CONFIRMED',
-    message: '月歌システムに接続されました',
-    timestamp: new Date().toISOString()
-  }));
+  try {
+    // 接続確認メッセージを送信
+    ws.send(JSON.stringify({
+      type: 'CONNECTION_CONFIRMED',
+      message: '月歌システムに接続されました',
+      timestamp: new Date().toISOString(),
+      serverInfo: {
+        protocol: 'wss',
+        path: '/unity',
+        status: 'ready'
+      }
+    }));
+    console.log('Connection confirmation sent to Unity client');
+  } catch (error) {
+    console.error('Error sending connection confirmation:', error);
+  }
 
   // メッセージ受信処理
   ws.on('message', (message) => {
@@ -71,6 +91,15 @@ wss.on('connection', (ws, req) => {
     console.error('Unity WebSocket error:', error);
     unityClients.delete(ws);
   });
+});
+
+// WebSocketサーバーのエラーハンドリング
+wss.on('error', (error) => {
+  console.error('WebSocket Server Error:', error);
+});
+
+wss.on('listening', () => {
+  console.log('WebSocket Server is listening on /unity path');
 });
 
 // Unity クライアントに月歌データをブロードキャスト
@@ -147,6 +176,26 @@ app.get('/health', (req, res) => {
     status: 'ok',
     connectedClients: unityClients.size,
     timestamp: new Date().toISOString()
+  });
+});
+
+// WebSocket接続テスト用エンドポイント
+app.get('/unity/test', (req, res) => {
+  const protocol = req.secure ? 'wss' : 'ws';
+  const host = req.get('host');
+  const wsUrl = `${protocol}://${host}/unity`;
+
+  res.json({
+    message: 'Unity WebSocket connection info',
+    websocketUrl: wsUrl,
+    protocol: protocol,
+    path: '/unity',
+    connectedClients: unityClients.size,
+    instructions: {
+      unity: `Connect to: ${wsUrl}`,
+      javascript: `new WebSocket("${wsUrl}")`,
+      note: 'Use WSS (secure) for HTTPS connections'
+    }
   });
 });
 
