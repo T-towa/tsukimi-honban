@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import TsukiutaModel from '../models/TsukiutaModel';
+import unityNotificationService from '../services/UnityNotificationService';
 
 // Controller層 - ビジネスロジックと状態管理
 export const useTsukiutaController = () => {
@@ -12,6 +13,10 @@ export const useTsukiutaController = () => {
   const [showAnimation, setShowAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Unity統合状態
+  const [unityConnected, setUnityConnected] = useState(false);
+  const [unityClientCount, setUnityClientCount] = useState(0);
 
   // Supabase設定状態
   const [supabaseUrl, setSupabaseUrl] = useState('');
@@ -107,6 +112,25 @@ export const useTsukiutaController = () => {
       if (savedData && savedData.id) {
         console.log(`月歌がデータベースに保存されました (ID: ${savedData.id})`);
         await fetchRecentTsukiutas(); // リストを更新
+
+        // Unityに月歌データを送信
+        if (unityNotificationService.isEnabled()) {
+          try {
+            const unityResult = await unityNotificationService.sendTsukiutaToUnity({
+              ...tsukiutaData,
+              id: savedData.id,
+              created_at: savedData.created_at
+            });
+
+            if (unityResult.success) {
+              console.log(`月歌をUnityに送信しました (${unityResult.sentToClients}クライアント)`);
+            } else {
+              console.warn('Unity送信に失敗:', unityResult.reason);
+            }
+          } catch (error) {
+            console.error('Unity通知エラー:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error saving tsukiuta:', error);
@@ -150,6 +174,30 @@ export const useTsukiutaController = () => {
     }
   };
 
+  // Unity接続状態を確認
+  const checkUnityConnection = async () => {
+    try {
+      const status = await unityNotificationService.checkUnityConnection();
+      setUnityConnected(status.connected);
+      setUnityClientCount(status.clientCount || 0);
+    } catch (error) {
+      console.error('Unity接続確認エラー:', error);
+      setUnityConnected(false);
+      setUnityClientCount(0);
+    }
+  };
+
+  // Unity統合の有効/無効を切り替え
+  const toggleUnityIntegration = (enabled) => {
+    unityNotificationService.setEnabled(enabled);
+    if (enabled) {
+      checkUnityConnection();
+    } else {
+      setUnityConnected(false);
+      setUnityClientCount(0);
+    }
+  };
+
   // 初回読み込み時の設定確認と月歌取得
   useEffect(() => {
     // 環境変数から設定を確認
@@ -162,7 +210,20 @@ export const useTsukiutaController = () => {
     if (isSupabaseConfigured) {
       fetchRecentTsukiutas();
     }
+
+    // Unity接続状態を確認（統合が有効な場合）
+    if (unityNotificationService.isEnabled()) {
+      checkUnityConnection();
+    }
   }, [isSupabaseConfigured]);
+
+  // Unity接続状態を定期的に確認
+  useEffect(() => {
+    if (unityNotificationService.isEnabled()) {
+      const interval = setInterval(checkUnityConnection, 30000); // 30秒間隔
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   return {
     // 状態
@@ -182,6 +243,10 @@ export const useTsukiutaController = () => {
     maxFeelings,
     customFeelingMaxLength,
 
+    // Unity統合状態
+    unityConnected,
+    unityClientCount,
+
     // アクション
     setCustomFeeling,
     setShowHistory,
@@ -192,6 +257,10 @@ export const useTsukiutaController = () => {
     toggleFeeling,
     resetForm,
     saveSupabaseConfig,
-    getEnvironmentConfig
+    getEnvironmentConfig,
+
+    // Unity関連
+    checkUnityConnection,
+    toggleUnityIntegration
   };
 };

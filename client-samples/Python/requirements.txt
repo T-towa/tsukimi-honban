@@ -1,0 +1,22 @@
+# 月歌WebSocketクライアント Python実装の依存関係
+
+# WebSocket通信
+websockets>=11.0.3
+
+# 非同期処理とイベントループ
+asyncio
+
+# JSON処理（標準ライブラリ）
+# json
+
+# ログ機能（標準ライブラリ）
+# logging
+
+# 時間処理（標準ライブラリ）
+# time
+
+# 型ヒント（標準ライブラリ、Python 3.5+）
+# typing
+
+# スレッド処理（標準ライブラリ）
+# threading

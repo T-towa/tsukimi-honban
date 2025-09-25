@@ -5,6 +5,7 @@ import WizardForm from './components/web/WizardForm';
 import TsukiutaIntro from './components/web/TsukiutaIntro';
 import ShareSection from './components/web/ShareSection';
 import BottomTabs from './components/web/BottomTabs';
+import UnityStatus from './components/web/UnityStatus';
 
 const TsukiutaGenerator = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -28,6 +29,10 @@ const TsukiutaGenerator = () => {
     maxFeelings,
     customFeelingMaxLength,
 
+    // Unity統合状態
+    unityConnected,
+    unityClientCount,
+
     // アクション
     setCustomFeeling,
     setShowHistory,
@@ -37,7 +42,11 @@ const TsukiutaGenerator = () => {
     generateTsukiuta,
     toggleFeeling,
     resetForm,
-    saveSupabaseConfig
+    saveSupabaseConfig,
+
+    // Unity関連
+    checkUnityConnection,
+    toggleUnityIntegration
   } = useTsukiutaController();
 
   // タブ変更時のハンドラー
@@ -63,14 +72,28 @@ const TsukiutaGenerator = () => {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="text-center py-20">
-            <h2 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+          <div className="py-8">
+            <h2 className="text-3xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
               ホーム
             </h2>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto">
-              <div className="text-6xl mb-4">🏠</div>
-              <p className="text-lg mb-4">ホーム機能</p>
-              <p className="text-white/70">実装予定</p>
+
+            {/* Unity統合ステータス */}
+            <div className="max-w-2xl mx-auto mb-8">
+              <UnityStatus
+                unityConnected={unityConnected}
+                unityClientCount={unityClientCount}
+                checkUnityConnection={checkUnityConnection}
+                toggleUnityIntegration={toggleUnityIntegration}
+              />
+            </div>
+
+            {/* その他のホーム機能 */}
+            <div className="text-center">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto">
+                <div className="text-6xl mb-4">🏠</div>
+                <p className="text-lg mb-4">その他の機能</p>
+                <p className="text-white/70">実装予定</p>
+              </div>
             </div>
           </div>
         );
