@@ -1,6 +1,16 @@
 # Build stage
 FROM node:18-alpine AS build
 
+# Build arguments for environment variables
+ARG REACT_APP_CLAUDE_API_KEY
+ARG REACT_APP_SUPABASE_URL
+ARG REACT_APP_SUPABASE_ANON_KEY
+
+# Set environment variables from build arguments
+ENV REACT_APP_CLAUDE_API_KEY=$REACT_APP_CLAUDE_API_KEY
+ENV REACT_APP_SUPABASE_URL=$REACT_APP_SUPABASE_URL
+ENV REACT_APP_SUPABASE_ANON_KEY=$REACT_APP_SUPABASE_ANON_KEY
+
 WORKDIR /app
 
 # Copy package files

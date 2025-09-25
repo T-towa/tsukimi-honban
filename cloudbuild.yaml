@@ -1,20 +1,16 @@
 steps:
-  # Install dependencies
-  - name: 'node:18'
-    entrypoint: 'npm'
-    args: ['install']
-
-  # Build the React app
-  - name: 'node:18'
-    entrypoint: 'npm'
-    args: ['run', 'build']
-
-  # Build the Docker image
+  # Build the Docker image (includes npm build)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/tsukiuta-web:$SHORT_SHA'
+      - '--build-arg'
+      - 'REACT_APP_CLAUDE_API_KEY=${_CLAUDE_API_KEY}'
+      - '--build-arg'
+      - 'REACT_APP_SUPABASE_URL=${_SUPABASE_URL}'
+      - '--build-arg'
+      - 'REACT_APP_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}'
       - '.'
 
   # Push the image to Container Registry
@@ -44,8 +40,6 @@ steps:
       - '1'
       - '--max-instances'
       - '10'
-      - '--set-env-vars'
-      - 'NODE_ENV=production,REACT_APP_CLAUDE_API_KEY=${_CLAUDE_API_KEY},REACT_APP_SUPABASE_URL=${_SUPABASE_URL},REACT_APP_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}'
       - '--min-instances'
       - '1'
 
