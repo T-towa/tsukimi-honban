@@ -26,19 +26,22 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine AS production
+FROM node:18-alpine AS production
 
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy package files
+COPY package*.json ./
 
-# Copy built React app to nginx
-COPY --from=build /app/build /usr/share/nginx/html
+# Install production dependencies
+RUN npm ci --only=production
+
+# Copy built React app and server
+COPY --from=build /app/build ./build
+COPY server.js ./
 
 # Expose port 8080 (Cloud Run requirement)
 EXPOSE 8080
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start Express server
+CMD ["node", "server.js"]

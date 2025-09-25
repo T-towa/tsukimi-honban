@@ -7,8 +7,6 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/tsukiuta-web:$BUILD_ID'
       - '--build-arg'
-      - 'REACT_APP_CLAUDE_API_KEY=${_CLAUDE_API_KEY}'
-      - '--build-arg'
       - 'REACT_APP_SUPABASE_URL=${_SUPABASE_URL}'
       - '--build-arg'
       - 'REACT_APP_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}'
@@ -43,6 +41,8 @@ steps:
       - '10'
       - '--min-instances'
       - '1'
+      - '--set-env-vars'
+      - 'CLAUDE_API_KEY=${_CLAUDE_API_KEY}'
 
 images:
   - 'gcr.io/$PROJECT_ID/tsukiuta-web:$BUILD_ID'
