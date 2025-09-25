@@ -10,12 +10,173 @@ if (typeof fetch === 'undefined') {
 
 const app = express();
 
+// Unity変更追跡システム
+class TsukiutaChangeTracker {
+  constructor() {
+    this.changes = new Map(); // clientId -> 変更リスト
+    this.globalSequence = 0;
+  }
+
+  // 新しい変更を記録
+  recordChange(tsukiutaData) {
+    this.globalSequence++;
+    const change = {
+      id: this.globalSequence,
+      timestamp: new Date().toISOString(),
+      type: 'NEW_TSUKIUTA',
+      data: tsukiutaData
+    };
+
+    // すべてのクライアントに変更を配信
+    for (const [clientId, clientChanges] of this.changes) {
+      clientChanges.push(change);
+
+      // 最大100件まで保持
+      if (clientChanges.length > 100) {
+        clientChanges.shift();
+      }
+    }
+
+    console.log(`Change recorded: ${change.id} - ${tsukiutaData.tsukiuta}`);
+    return change;
+  }
+
+  // クライアントを登録
+  registerClient(clientId) {
+    if (!this.changes.has(clientId)) {
+      this.changes.set(clientId, []);
+      console.log(`Unity client registered: ${clientId}`);
+    }
+  }
+
+  // クライアントの変更を取得
+  getChanges(clientId, lastSequence = 0) {
+    this.registerClient(clientId);
+    const clientChanges = this.changes.get(clientId) || [];
+
+    // lastSequence以降の変更のみ取得
+    const newChanges = clientChanges.filter(change => change.id > lastSequence);
+
+    return {
+      changes: newChanges,
+      hasChanges: newChanges.length > 0,
+      latestSequence: newChanges.length > 0 ?
+        Math.max(...newChanges.map(c => c.id)) : lastSequence,
+      totalClients: this.changes.size
+    };
+  }
+
+  // 確認済み変更を削除
+  acknowledgeChanges(clientId, sequenceId) {
+    const clientChanges = this.changes.get(clientId) || [];
+    const updatedChanges = clientChanges.filter(change => change.id > sequenceId);
+    this.changes.set(clientId, updatedChanges);
+
+    console.log(`Client ${clientId} acknowledged changes up to sequence ${sequenceId}`);
+  }
+
+  // 統計情報
+  getStats() {
+    return {
+      totalClients: this.changes.size,
+      globalSequence: this.globalSequence,
+      pendingChanges: Array.from(this.changes.values())
+        .reduce((total, changes) => total + changes.length, 0)
+    };
+  }
+}
+
+const changeTracker = new TsukiutaChangeTracker();
+
 // CORS設定
 app.use(cors());
 app.use(express.json());
 
 // 静的ファイルの配信（Reactビルド済みファイル）
 app.use(express.static(path.join(__dirname, 'build')));
+
+// Unity変更確認用APIエンドポイント
+app.get('/api/unity/check-changes', (req, res) => {
+  const clientId = req.query.clientId || req.headers['unity-client-id'] || 'default-client';
+  const lastSequence = parseInt(req.query.lastSequence || '0');
+
+  try {
+    const result = changeTracker.getChanges(clientId, lastSequence);
+
+    res.json({
+      success: true,
+      clientId: clientId,
+      hasChanges: result.hasChanges,
+      changesCount: result.changes.length,
+      changes: result.changes,
+      latestSequence: result.latestSequence,
+      serverInfo: {
+        totalClients: result.totalClients,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error checking changes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check changes',
+      message: error.message
+    });
+  }
+});
+
+// Unity変更確認応答用APIエンドポイント
+app.post('/api/unity/acknowledge', (req, res) => {
+  const { clientId, sequenceId } = req.body;
+
+  if (!clientId || !sequenceId) {
+    return res.status(400).json({
+      success: false,
+      error: 'clientId and sequenceId are required'
+    });
+  }
+
+  try {
+    changeTracker.acknowledgeChanges(clientId, sequenceId);
+
+    res.json({
+      success: true,
+      message: 'Changes acknowledged',
+      clientId: clientId,
+      acknowledgedSequence: sequenceId
+    });
+
+  } catch (error) {
+    console.error('Error acknowledging changes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to acknowledge changes',
+      message: error.message
+    });
+  }
+});
+
+// Unity統計情報用APIエンドポイント
+app.get('/api/unity/stats', (req, res) => {
+  try {
+    const stats = changeTracker.getStats();
+
+    res.json({
+      success: true,
+      stats: stats,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error getting stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get stats',
+      message: error.message
+    });
+  }
+});
 
 // Unity通知用APIエンドポイント
 app.post('/api/notify-unity', async (req, res) => {
@@ -168,6 +329,10 @@ app.post('/api/generate-tsukiuta', async (req, res) => {
     }
 
     console.log('Successfully generated tsukiuta');
+
+    // Unity変更追跡システムに記録
+    changeTracker.recordChange(result);
+
     res.json(result);
 
   } catch (error) {
