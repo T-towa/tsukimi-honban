@@ -8,6 +8,14 @@ class TsukiutaModel {
     this.claudeApiUrl = process.env.REACT_APP_CLAUDE_API_URL || 'https://api.anthropic.com/v1/messages';
     this.claudeModel = process.env.REACT_APP_CLAUDE_MODEL || 'claude-sonnet-4-20250514';
 
+    // デバッグ用：環境変数の確認（本番では削除推奨）
+    console.log('🔧 環境変数チェック:');
+    console.log('SUPABASE_URL:', this.supabaseUrl ? `設定済み (${this.supabaseUrl.substring(0, 20)}...)` : '未設定');
+    console.log('SUPABASE_ANON_KEY:', this.supabaseAnonKey ? `設定済み (${this.supabaseAnonKey.substring(0, 10)}...)` : '未設定');
+    console.log('CLAUDE_API_KEY:', this.claudeApiKey ? `設定済み (${this.claudeApiKey.substring(0, 15)}...)` : '未設定');
+    console.log('CLAUDE_API_URL:', this.claudeApiUrl);
+    console.log('CLAUDE_MODEL:', this.claudeModel);
+
     // 環境変数が設定されていればデフォルトで有効化
     this.isConfigured = !!(this.supabaseUrl && this.supabaseAnonKey);
 
