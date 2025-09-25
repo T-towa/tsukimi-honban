@@ -17,6 +17,67 @@ app.use(express.json());
 // 静的ファイルの配信（Reactビルド済みファイル）
 app.use(express.static(path.join(__dirname, 'build')));
 
+// Unity通知用APIエンドポイント
+app.post('/api/notify-unity', async (req, res) => {
+  const { tsukiuta, unityEndpoint } = req.body;
+
+  if (!tsukiuta) {
+    return res.status(400).json({ error: 'Tsukiuta data is required' });
+  }
+
+  if (!unityEndpoint) {
+    return res.status(400).json({ error: 'Unity endpoint URL is required' });
+  }
+
+  try {
+    console.log('Sending tsukiuta to Unity endpoint:', unityEndpoint);
+
+    // Unityアプリケーションに月歌データを送信
+    const unityResponse = await fetch(unityEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'NEW_TSUKIUTA',
+        data: tsukiuta,
+        timestamp: new Date().toISOString(),
+        source: 'tsukiuta-web-app'
+      })
+    });
+
+    if (unityResponse.ok) {
+      const unityResult = await unityResponse.json();
+      console.log('Successfully sent tsukiuta to Unity');
+
+      return res.json({
+        success: true,
+        message: 'Tsukiuta sent to Unity successfully',
+        unityResponse: unityResult
+      });
+    } else {
+      const errorText = await unityResponse.text();
+      console.error('Unity endpoint responded with error:', unityResponse.status, errorText);
+
+      return res.status(502).json({
+        success: false,
+        error: 'Unity endpoint error',
+        status: unityResponse.status,
+        message: errorText
+      });
+    }
+
+  } catch (error) {
+    console.error('Error sending tsukiuta to Unity:', error);
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to send to Unity',
+      message: error.message
+    });
+  }
+});
+
 // Claude APIプロキシエンドポイント
 app.post('/api/generate-tsukiuta', async (req, res) => {
   try {

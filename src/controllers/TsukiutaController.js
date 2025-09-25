@@ -18,6 +18,10 @@ export const useTsukiutaController = () => {
   const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(false);
 
+  // Unity設定状態
+  const [unityEndpoint, setUnityEndpoint] = useState('');
+  const [unityEnabled, setUnityEnabled] = useState(false);
+
   // Model層のインスタンス
   const model = new TsukiutaModel();
 
@@ -54,6 +58,20 @@ export const useTsukiutaController = () => {
     try {
       const result = await model.generateTsukiuta(selectedFeelings);
       setGeneratedTsukiuta(result);
+
+      // Unityに通知を送信（設定されている場合）
+      if (unityEnabled && unityEndpoint) {
+        try {
+          const unityResult = await model.notifyUnity(result, unityEndpoint);
+          if (unityResult.success) {
+            console.log('月歌をUnityに送信しました');
+          } else {
+            console.warn('Unity通知に失敗:', unityResult.message);
+          }
+        } catch (unityError) {
+          console.error('Unity通知エラー:', unityError);
+        }
+      }
 
       // アニメーション表示
       setShowAnimation(true);
@@ -144,6 +162,36 @@ export const useTsukiutaController = () => {
     setGeneratedTsukiuta(null);
   };
 
+  // Unity設定を更新
+  const updateUnityConfiguration = (endpoint, enabled) => {
+    setUnityEndpoint(endpoint);
+    setUnityEnabled(enabled);
+
+    // LocalStorageに保存
+    try {
+      localStorage.setItem('unity_config', JSON.stringify({
+        endpoint: endpoint,
+        enabled: enabled
+      }));
+    } catch (error) {
+      console.error('Unity設定の保存に失敗:', error);
+    }
+  };
+
+  // Unity設定をロード
+  const loadUnityConfiguration = () => {
+    try {
+      const savedConfig = localStorage.getItem('unity_config');
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        setUnityEndpoint(config.endpoint || '');
+        setUnityEnabled(config.enabled || false);
+      }
+    } catch (error) {
+      console.error('Unity設定の読み込みに失敗:', error);
+    }
+  };
+
   // 初回読み込み時の設定確認と月歌取得
   useEffect(() => {
     // 環境変数から設定を確認
@@ -152,6 +200,9 @@ export const useTsukiutaController = () => {
       setIsSupabaseConfigured(true);
       setSupabaseUrl(envConfig.supabaseUrl);
     }
+
+    // Unity設定をロード
+    loadUnityConfiguration();
 
     if (isSupabaseConfigured) {
       fetchRecentTsukiutas();
@@ -174,6 +225,10 @@ export const useTsukiutaController = () => {
     supabaseAnonKey,
     isSupabaseConfigured,
 
+    // Unity設定状態
+    unityEndpoint,
+    unityEnabled,
+
     // アクション
     selectFeeling,
     addCustomFeeling,
@@ -184,6 +239,7 @@ export const useTsukiutaController = () => {
     resetConfiguration,
     toggleHistory,
     clearSelections,
+    updateUnityConfiguration,
 
     // 値設定
     setCustomFeeling

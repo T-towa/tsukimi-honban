@@ -210,6 +210,55 @@ class TsukiutaModel {
       throw error;
     }
   }
+
+  // Unityに月歌データを送信
+  async notifyUnity(tsukiutaData, unityEndpoint) {
+    if (!unityEndpoint) {
+      console.log('Unity endpoint not specified, skipping Unity notification');
+      return { success: false, reason: 'Unity endpoint not specified' };
+    }
+
+    try {
+      console.log('Sending tsukiuta to Unity via backend API...');
+
+      const response = await fetch('/api/notify-unity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tsukiuta: tsukiutaData,
+          unityEndpoint: unityEndpoint
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Unity通知成功:', result);
+        return {
+          success: true,
+          message: result.message,
+          unityResponse: result.unityResponse
+        };
+      } else {
+        const errorData = await response.json();
+        console.error('Unity通知エラー:', errorData);
+        return {
+          success: false,
+          error: errorData.error,
+          message: errorData.message
+        };
+      }
+
+    } catch (error) {
+      console.error('Unity通知リクエストエラー:', error);
+      return {
+        success: false,
+        error: 'Network error',
+        message: error.message
+      };
+    }
+  }
 }
 
 export default TsukiutaModel;
