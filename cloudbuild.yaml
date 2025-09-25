@@ -46,6 +46,8 @@ steps:
       - '10'
       - '--set-env-vars'
       - 'NODE_ENV=production'
+      - '--min-instances'
+      - '1'
 
 images:
   - 'gcr.io/$PROJECT_ID/tsukiuta-web:$SHORT_SHA'
