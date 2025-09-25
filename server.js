@@ -116,7 +116,7 @@ app.post('/api/generate-tsukiuta', async (req, res) => {
 });
 
 // React アプリのルーティング（SPA対応）
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
