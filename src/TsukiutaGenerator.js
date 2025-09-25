@@ -5,7 +5,6 @@ import WizardForm from './components/web/WizardForm';
 import TsukiutaIntro from './components/web/TsukiutaIntro';
 import ShareSection from './components/web/ShareSection';
 import BottomTabs from './components/web/BottomTabs';
-import UnityStatus from './components/web/UnityStatus';
 
 const TsukiutaGenerator = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -29,9 +28,6 @@ const TsukiutaGenerator = () => {
     maxFeelings,
     customFeelingMaxLength,
 
-    // Unity統合状態
-    unityConnected,
-    unityClientCount,
 
     // アクション
     setCustomFeeling,
@@ -44,9 +40,6 @@ const TsukiutaGenerator = () => {
     resetForm,
     saveSupabaseConfig,
 
-    // Unity関連
-    checkUnityConnection,
-    toggleUnityIntegration
   } = useTsukiutaController();
 
   // タブ変更時のハンドラー
@@ -77,15 +70,6 @@ const TsukiutaGenerator = () => {
               ホーム
             </h2>
 
-            {/* Unity統合ステータス */}
-            <div className="max-w-2xl mx-auto mb-8">
-              <UnityStatus
-                unityConnected={unityConnected}
-                unityClientCount={unityClientCount}
-                checkUnityConnection={checkUnityConnection}
-                toggleUnityIntegration={toggleUnityIntegration}
-              />
-            </div>
 
             {/* その他のホーム機能 */}
             <div className="text-center">

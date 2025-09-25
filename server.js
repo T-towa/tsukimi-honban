@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const WebSocket = require('ws');
-const http = require('http');
 
 // Node.js 18以降でfetchが利用可能であることを確認
 if (typeof fetch === 'undefined') {
@@ -11,10 +9,6 @@ if (typeof fetch === 'undefined') {
 }
 
 const app = express();
-const server = http.createServer(app);
-
-// Unity WebSocket クライアント管理
-const unityClients = new Set();
 
 // CORS設定
 app.use(cors());
@@ -22,182 +16,6 @@ app.use(express.json());
 
 // 静的ファイルの配信（Reactビルド済みファイル）
 app.use(express.static(path.join(__dirname, 'build')));
-
-// Unity WebSocket サーバー設定
-const wss = new WebSocket.Server({
-  server: server,
-  path: '/unity',
-  // Cloud Run最適化設定
-  perMessageDeflate: false,
-  maxPayload: 1024 * 1024, // 1MB
-  clientTracking: true,
-  verifyClient: (info) => {
-    console.log('WebSocket connection attempt from:', info.origin, info.req.url);
-    return true;
-  }
-});
-
-wss.on('connection', (ws, req) => {
-  const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const userAgent = req.headers['user-agent'];
-  console.log(`Unity client connected from ${clientIP}, User-Agent: ${userAgent}`);
-
-  // Unity クライアントとして登録
-  unityClients.add(ws);
-
-  try {
-    // 接続確認メッセージを送信
-    ws.send(JSON.stringify({
-      type: 'CONNECTION_CONFIRMED',
-      message: '月歌システムに接続されました',
-      timestamp: new Date().toISOString(),
-      serverInfo: {
-        protocol: 'wss',
-        path: '/unity',
-        status: 'ready'
-      }
-    }));
-    console.log('Connection confirmation sent to Unity client');
-  } catch (error) {
-    console.error('Error sending connection confirmation:', error);
-  }
-
-  // メッセージ受信処理
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('Received from Unity:', data);
-
-      // Unity からの ping に pong で応答
-      if (data.type === 'PING') {
-        ws.send(JSON.stringify({
-          type: 'PONG',
-          timestamp: new Date().toISOString()
-        }));
-      }
-    } catch (error) {
-      console.error('Error parsing Unity message:', error);
-    }
-  });
-
-  // 切断処理
-  ws.on('close', () => {
-    console.log('Unity client disconnected');
-    unityClients.delete(ws);
-  });
-
-  // エラー処理
-  ws.on('error', (error) => {
-    console.error('Unity WebSocket error:', error);
-    unityClients.delete(ws);
-  });
-});
-
-// WebSocketサーバーのエラーハンドリング
-wss.on('error', (error) => {
-  console.error('WebSocket Server Error:', error);
-});
-
-wss.on('listening', () => {
-  console.log('WebSocket Server is listening on /unity path');
-});
-
-// Unity クライアントに月歌データをブロードキャスト
-function broadcastToUnity(message) {
-  if (unityClients.size === 0) {
-    console.log('No Unity clients connected');
-    return {
-      success: false,
-      message: 'No Unity clients connected',
-      clientCount: 0
-    };
-  }
-
-  let successCount = 0;
-  const messageStr = JSON.stringify(message);
-
-  unityClients.forEach((ws) => {
-    if (ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(messageStr);
-        successCount++;
-        console.log('Sent tsukiuta to Unity client:', message.data?.tsukiuta);
-      } catch (error) {
-        console.error('Error sending to Unity client:', error);
-        unityClients.delete(ws);
-      }
-    } else {
-      // 切断されたクライアントを削除
-      unityClients.delete(ws);
-    }
-  });
-
-  return {
-    success: successCount > 0,
-    message: `Sent to ${successCount} Unity clients`,
-    clientCount: successCount
-  };
-}
-
-// Unity関連のAPIエンドポイント
-// Unity接続状態確認
-app.get('/unity/status', (req, res) => {
-  res.json({
-    connected: unityClients.size > 0,
-    clientCount: unityClients.size,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// 月歌データをUnityに送信（外部から呼び出し用）
-app.post('/unity/send-tsukiuta', (req, res) => {
-  const { tsukiuta } = req.body;
-
-  if (!tsukiuta) {
-    return res.status(400).json({ error: 'Tsukiuta data is required' });
-  }
-
-  const result = broadcastToUnity({
-    type: 'NEW_TSUKIUTA',
-    data: tsukiuta,
-    timestamp: new Date().toISOString()
-  });
-
-  res.json({
-    success: result.success,
-    message: result.message,
-    sentToClients: result.clientCount
-  });
-});
-
-// ヘルスチェック
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    connectedClients: unityClients.size,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// WebSocket接続テスト用エンドポイント
-app.get('/unity/test', (req, res) => {
-  const protocol = req.secure ? 'wss' : 'ws';
-  const host = req.get('host');
-  const wsUrl = `${protocol}://${host}/unity`;
-
-  res.json({
-    message: 'Unity WebSocket connection info',
-    websocketUrl: wsUrl,
-    protocol: protocol,
-    path: '/unity',
-    connectedClients: unityClients.size,
-    instructions: {
-      unity: `Connect to: ${wsUrl}`,
-      javascript: `new WebSocket("${wsUrl}")`,
-      note: 'Use WSS (secure) for HTTPS connections'
-    }
-  });
-});
 
 // Claude APIプロキシエンドポイント
 app.post('/api/generate-tsukiuta', async (req, res) => {
@@ -303,9 +121,7 @@ app.get(/.*/, (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`WebSocket server enabled on /unity`);
-  console.log(`Unity clients connected: ${unityClients.size}`);
   console.log(`Claude API Key configured: ${process.env.CLAUDE_API_KEY ? 'Yes' : 'No'}`);
 });

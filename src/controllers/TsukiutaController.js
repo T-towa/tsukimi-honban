@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import TsukiutaModel from '../models/TsukiutaModel';
-import unityNotificationService from '../services/UnityNotificationService';
 
 // Controller層 - ビジネスロジックと状態管理
 export const useTsukiutaController = () => {
@@ -14,123 +13,99 @@ export const useTsukiutaController = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Unity統合状態
-  const [unityConnected, setUnityConnected] = useState(false);
-  const [unityClientCount, setUnityClientCount] = useState(0);
-
   // Supabase設定状態
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
 
-  // Modelインスタンス
-  const [model] = useState(() => new TsukiutaModel());
+  // Model層のインスタンス
+  const model = new TsukiutaModel();
 
-  // 定数（環境変数から設定を取得）
-  const maxFeelings = parseInt(process.env.REACT_APP_MAX_FEELINGS) || 3;
-  const customFeelingMaxLength = parseInt(process.env.REACT_APP_CUSTOM_FEELING_MAX_LENGTH) || 50;
+  // 感想を選択
+  const selectFeeling = (feeling) => {
+    const maxFeelings = parseInt(process.env.REACT_APP_MAX_FEELINGS || '3');
 
-  const predefinedFeelings = [
-    '美しい月明かり',
-    '幻想的な光',
-    '秋の涼しさ',
-    '懐かしい思い出',
-    '静寂な時間',
-    '心の安らぎ',
-    '竹取物語の世界',
-    '金沢の夜景',
-    '家族との時間',
-    '特別な瞬間'
-  ];
-
-  // Supabaseから最新の月歌を取得
-  const fetchRecentTsukiutas = async () => {
-    const data = await model.fetchTsukiutas();
-    setRecentTsukiutas(data);
+    if (selectedFeelings.includes(feeling)) {
+      setSelectedFeelings(prev => prev.filter(f => f !== feeling));
+    } else if (selectedFeelings.length < maxFeelings) {
+      setSelectedFeelings(prev => [...prev, feeling]);
+    }
   };
 
-  // 月歌生成（ウィザード形式対応）
-  const generateTsukiuta = async (feelings = null) => {
-    // feelings引数がある場合はウィザード形式から、ない場合は従来形式から
-    let feelingsToUse = feelings;
+  // カスタム感想を追加
+  const addCustomFeeling = () => {
+    const maxLength = parseInt(process.env.REACT_APP_CUSTOM_FEELING_MAX_LENGTH || '50');
+    const maxFeelings = parseInt(process.env.REACT_APP_MAX_FEELINGS || '3');
 
-    if (!feelingsToUse) {
-      if (selectedFeelings.length === 0 && !customFeeling.trim()) {
-        alert('感想を選択するか入力してください');
-        return;
-      }
-
-      feelingsToUse = [...selectedFeelings];
-      if (customFeeling.trim()) {
-        feelingsToUse.push(customFeeling.trim());
-      }
-    } else if (feelingsToUse.length === 0) {
-      alert('感想を入力してください');
-      return;
+    if (customFeeling.trim() &&
+        customFeeling.length <= maxLength &&
+        !selectedFeelings.includes(customFeeling.trim()) &&
+        selectedFeelings.length < maxFeelings) {
+      setSelectedFeelings(prev => [...prev, customFeeling.trim()]);
+      setCustomFeeling('');
     }
+  };
+
+  // 月歌を生成
+  const generateTsukiuta = async () => {
+    if (selectedFeelings.length === 0) return;
 
     setIsGenerating(true);
-    setShowAnimation(false);
-
     try {
-      // Model経由で月歌生成
-      const tsukiutaData = await model.generateTsukiuta(feelingsToUse);
+      const result = await model.generateTsukiuta(selectedFeelings);
+      setGeneratedTsukiuta(result);
 
-      // 生成された月歌を設定
-      setGeneratedTsukiuta(tsukiutaData);
+      // アニメーション表示
       setShowAnimation(true);
-
-      // データベースに保存（explanation は除外、reading は含む）
-      const dbData = {
-        impression: tsukiutaData.impression,
-        tsukiuta: tsukiutaData.tsukiuta,
-        line1: tsukiutaData.line1,
-        line2: tsukiutaData.line2,
-        line3: tsukiutaData.line3,
-        syllables_line1: tsukiutaData.syllables_line1,
-        syllables_line2: tsukiutaData.syllables_line2,
-        syllables_line3: tsukiutaData.syllables_line3,
-        reading: tsukiutaData.reading
-      };
-
-      await saveTsukiutaToDatabase(dbData);
+      setTimeout(() => setShowAnimation(false), 3000);
 
     } catch (error) {
       console.error('Error generating tsukiuta:', error);
-      alert('月歌の生成に失敗しました。もう一度お試しください。');
+      alert(`月歌の生成に失敗しました: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // データベースに保存
+  // 最近の月歌を取得
+  const fetchRecentTsukiutas = async () => {
+    if (!isSupabaseConfigured) {
+      // Supabaseが設定されていない場合はローカルデータを表示
+      const localData = model.getLocalTsukiutas();
+      setRecentTsukiutas(localData);
+      return;
+    }
+
+    try {
+      const data = await model.fetchTsukiutas();
+
+      // データベースのデータとローカルデータをマージ
+      const localData = model.getLocalTsukiutas();
+      const mergedData = [...data, ...localData].sort((a, b) =>
+        new Date(b.created_at) - new Date(a.created_at)
+      );
+
+      setRecentTsukiutas(mergedData);
+    } catch (error) {
+      console.error('Error fetching tsukiutas:', error);
+      // エラー時はローカルデータのみ表示
+      const localData = model.getLocalTsukiutas();
+      setRecentTsukiutas(localData);
+    }
+  };
+
+  // データベースに月歌を保存
   const saveTsukiutaToDatabase = async (tsukiutaData) => {
+    if (!tsukiutaData) return;
+
     setIsSaving(true);
     try {
       const savedData = await model.saveTsukiuta(tsukiutaData);
+
       if (savedData && savedData.id) {
         console.log(`月歌がデータベースに保存されました (ID: ${savedData.id})`);
         await fetchRecentTsukiutas(); // リストを更新
 
-        // Unityに月歌データを送信
-        if (unityNotificationService.isEnabled()) {
-          try {
-            const unityResult = await unityNotificationService.sendTsukiutaToUnity({
-              ...tsukiutaData,
-              id: savedData.id,
-              created_at: savedData.created_at
-            });
-
-            if (unityResult.success) {
-              console.log(`月歌をUnityに送信しました (${unityResult.sentToClients}クライアント)`);
-            } else {
-              console.warn('Unity送信に失敗:', unityResult.reason);
-            }
-          } catch (error) {
-            console.error('Unity通知エラー:', error);
-          }
-        }
       }
     } catch (error) {
       console.error('Error saving tsukiuta:', error);
@@ -139,63 +114,34 @@ export const useTsukiutaController = () => {
     }
   };
 
-  // 感想選択のトグル
-  const toggleFeeling = (feeling) => {
-    setSelectedFeelings(prev => {
-      if (prev.includes(feeling)) {
-        return prev.filter(f => f !== feeling);
-      } else if (prev.length < maxFeelings) {
-        return [...prev, feeling];
-      }
-      return prev;
-    });
-  };
-
-  // リセット
-  const resetForm = () => {
-    setSelectedFeelings([]);
-    setCustomFeeling('');
-    setGeneratedTsukiuta(null);
-    setShowAnimation(false);
-  };
-
-  // 環境変数の設定状態を取得
-  const getEnvironmentConfig = () => {
-    return model.getConfiguration();
-  };
-
-  // Supabase設定を保存
-  const saveSupabaseConfig = () => {
-    const configured = model.configure(supabaseUrl, supabaseAnonKey);
-    if (configured) {
+  // 設定を更新
+  const updateConfiguration = (url, key) => {
+    if (model.configure(url, key)) {
       setIsSupabaseConfigured(true);
-      setShowConfig(false);
+      setSupabaseUrl(url);
+      setSupabaseAnonKey(key);
       fetchRecentTsukiutas();
     }
   };
 
-  // Unity接続状態を確認
-  const checkUnityConnection = async () => {
-    try {
-      const status = await unityNotificationService.checkUnityConnection();
-      setUnityConnected(status.connected);
-      setUnityClientCount(status.clientCount || 0);
-    } catch (error) {
-      console.error('Unity接続確認エラー:', error);
-      setUnityConnected(false);
-      setUnityClientCount(0);
-    }
+  // 設定をリセット
+  const resetConfiguration = () => {
+    setIsSupabaseConfigured(false);
+    setSupabaseUrl('');
+    setSupabaseAnonKey('');
+    setRecentTsukiutas([]);
   };
 
-  // Unity統合の有効/無効を切り替え
-  const toggleUnityIntegration = (enabled) => {
-    unityNotificationService.setEnabled(enabled);
-    if (enabled) {
-      checkUnityConnection();
-    } else {
-      setUnityConnected(false);
-      setUnityClientCount(0);
-    }
+  // 履歴表示の切り替え
+  const toggleHistory = () => {
+    setShowHistory(prev => !prev);
+  };
+
+  // 選択をクリア
+  const clearSelections = () => {
+    setSelectedFeelings([]);
+    setCustomFeeling('');
+    setGeneratedTsukiuta(null);
   };
 
   // 初回読み込み時の設定確認と月歌取得
@@ -210,20 +156,7 @@ export const useTsukiutaController = () => {
     if (isSupabaseConfigured) {
       fetchRecentTsukiutas();
     }
-
-    // Unity接続状態を確認（統合が有効な場合）
-    if (unityNotificationService.isEnabled()) {
-      checkUnityConnection();
-    }
   }, [isSupabaseConfigured]);
-
-  // Unity接続状態を定期的に確認
-  useEffect(() => {
-    if (unityNotificationService.isEnabled()) {
-      const interval = setInterval(checkUnityConnection, 30000); // 30秒間隔
-      return () => clearInterval(interval);
-    }
-  }, []);
 
   return {
     // 状態
@@ -235,32 +168,24 @@ export const useTsukiutaController = () => {
     showAnimation,
     isSaving,
     showHistory,
+
+    // Supabase設定状態
     supabaseUrl,
     supabaseAnonKey,
     isSupabaseConfigured,
-    showConfig,
-    predefinedFeelings,
-    maxFeelings,
-    customFeelingMaxLength,
-
-    // Unity統合状態
-    unityConnected,
-    unityClientCount,
 
     // アクション
-    setCustomFeeling,
-    setShowHistory,
-    setSupabaseUrl,
-    setSupabaseAnonKey,
-    setShowConfig,
+    selectFeeling,
+    addCustomFeeling,
     generateTsukiuta,
-    toggleFeeling,
-    resetForm,
-    saveSupabaseConfig,
-    getEnvironmentConfig,
+    fetchRecentTsukiutas,
+    saveTsukiutaToDatabase,
+    updateConfiguration,
+    resetConfiguration,
+    toggleHistory,
+    clearSelections,
 
-    // Unity関連
-    checkUnityConnection,
-    toggleUnityIntegration
+    // 値設定
+    setCustomFeeling
   };
 };
