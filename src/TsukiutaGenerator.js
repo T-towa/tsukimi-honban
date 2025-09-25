@@ -23,22 +23,13 @@ const TsukiutaGenerator = () => {
     supabaseUrl,
     supabaseAnonKey,
     isSupabaseConfigured,
-    showConfig,
-    predefinedFeelings,
-    maxFeelings,
-    customFeelingMaxLength,
-
+    unityEndpoint,
+    unityEnabled,
 
     // アクション
     setCustomFeeling,
-    setShowHistory,
-    setSupabaseUrl,
-    setSupabaseAnonKey,
-    setShowConfig,
     generateTsukiuta,
-    toggleFeeling,
-    resetForm,
-    saveSupabaseConfig,
+    clearSelections
 
   } = useTsukiutaController();
 
@@ -57,7 +48,7 @@ const TsukiutaGenerator = () => {
 
   // フォームリセット時のハンドラー（導入画面に戻る）
   const handleResetToIntro = () => {
-    resetForm();
+    clearSelections();
     setShowWizard(false);
   };
 

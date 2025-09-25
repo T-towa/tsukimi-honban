@@ -51,12 +51,14 @@ export const useTsukiutaController = () => {
   };
 
   // 月歌を生成
-  const generateTsukiuta = async () => {
-    if (selectedFeelings.length === 0) return;
+  const generateTsukiuta = async (feelings) => {
+    // WizardFormから渡された感情を使用、またはselectedFeelingsフォールバック
+    const feelingsToUse = feelings || selectedFeelings;
+    if (feelingsToUse.length === 0) return;
 
     setIsGenerating(true);
     try {
-      const result = await model.generateTsukiuta(selectedFeelings);
+      const result = await model.generateTsukiuta(feelingsToUse);
       setGeneratedTsukiuta(result);
 
       // Unityに通知を送信（設定されている場合）
@@ -70,6 +72,16 @@ export const useTsukiutaController = () => {
           }
         } catch (unityError) {
           console.error('Unity通知エラー:', unityError);
+        }
+      }
+
+      // Supabaseに保存（設定されている場合）
+      if (isSupabaseConfigured) {
+        try {
+          await saveTsukiutaToDatabase(result);
+        } catch (saveError) {
+          console.error('Supabase保存エラー:', saveError);
+          // 保存エラーでもメイン処理は継続
         }
       }
 

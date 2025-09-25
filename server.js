@@ -178,6 +178,34 @@ app.get('/api/unity/stats', (req, res) => {
   }
 });
 
+// Unity変更手動記録用APIエンドポイント
+app.post('/api/unity/record-change', async (req, res) => {
+  const { tsukiutaData } = req.body;
+
+  if (!tsukiutaData) {
+    return res.status(400).json({ error: 'Tsukiuta data is required' });
+  }
+
+  try {
+    const change = changeTracker.recordChange(tsukiutaData);
+
+    res.json({
+      success: true,
+      message: 'Change recorded successfully',
+      changeId: change.id,
+      timestamp: change.timestamp
+    });
+
+  } catch (error) {
+    console.error('Error recording change:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to record change',
+      message: error.message
+    });
+  }
+});
+
 // Unity通知用APIエンドポイント
 app.post('/api/notify-unity', async (req, res) => {
   const { tsukiuta, unityEndpoint } = req.body;
@@ -329,9 +357,6 @@ app.post('/api/generate-tsukiuta', async (req, res) => {
     }
 
     console.log('Successfully generated tsukiuta');
-
-    // Unity変更追跡システムに記録
-    changeTracker.recordChange(result);
 
     res.json(result);
 

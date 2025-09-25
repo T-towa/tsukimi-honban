@@ -30,6 +30,7 @@
     "@types/react-dom": "^18.2.0",
     "serve": "^14.2.0"
   },
+  "proxy": "http://localhost:8080",
   "browserslist": {
     "production": [
       ">0.2%",
