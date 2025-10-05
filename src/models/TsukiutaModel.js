@@ -107,10 +107,19 @@ class TsukiutaModel {
 
   // 月歌をデータベースに保存（IDは自動採番）
   async saveTsukiuta(tsukiutaData) {
-    if (!this.isConfigured) return null;
+    if (!this.isConfigured) {
+      console.log('⚠️ Supabase未設定: データベース保存をスキップします');
+      return null;
+    }
 
     // IDは除外してデータベースに送信（自動採番のため）
     const { id, isLocal, ...dataToSave } = tsukiutaData;
+
+    console.log('💾 Supabaseへ保存開始...', {
+      url: this.supabaseUrl,
+      hasKey: !!this.supabaseAnonKey,
+      data: dataToSave
+    });
 
     try {
       const response = await fetch(`${this.supabaseUrl}/rest/v1/tsukiutas`, {
@@ -126,13 +135,16 @@ class TsukiutaModel {
 
       if (response.ok) {
         const savedData = await response.json();
-        console.log('データベース保存成功:', savedData[0]?.id ? `ID: ${savedData[0].id}` : '保存完了');
+        console.log('✅ データベース保存成功:', savedData[0]?.id ? `ID: ${savedData[0].id}` : '保存完了', savedData[0]);
         return savedData[0]; // 自動採番されたIDを含むデータを返す
+      } else {
+        const errorText = await response.text();
+        console.error('❌ データベース保存エラー:', response.status, errorText);
+        throw new Error(`データベース保存に失敗しました (${response.status}): ${errorText}`);
       }
-      throw new Error('データベース保存に失敗しました');
     } catch (error) {
-      console.error('Error saving tsukiuta:', error);
-      return null;
+      console.error('❌ Error saving tsukiuta:', error);
+      throw error; // エラーを上位に伝播
     }
   }
 

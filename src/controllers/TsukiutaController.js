@@ -75,14 +75,12 @@ export const useTsukiutaController = () => {
         }
       }
 
-      // Supabaseに保存（設定されている場合）
-      if (isSupabaseConfigured) {
-        try {
-          await saveTsukiutaToDatabase(result);
-        } catch (saveError) {
-          console.error('Supabase保存エラー:', saveError);
-          // 保存エラーでもメイン処理は継続
-        }
+      // Supabaseに保存（環境変数が設定されていれば自動保存）
+      try {
+        await saveTsukiutaToDatabase(result);
+      } catch (saveError) {
+        console.error('Supabase保存エラー:', saveError);
+        // 保存エラーでもメイン処理は継続
       }
 
       // アニメーション表示
@@ -128,17 +126,25 @@ export const useTsukiutaController = () => {
   const saveTsukiutaToDatabase = async (tsukiutaData) => {
     if (!tsukiutaData) return;
 
+    // Supabase設定が存在しない場合はスキップ（ローカル保存のみ）
+    if (!model.isConfigured) {
+      console.log('Supabase未設定のためDB保存をスキップ（ローカル保存済み）');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const savedData = await model.saveTsukiuta(tsukiutaData);
 
       if (savedData && savedData.id) {
-        console.log(`月歌がデータベースに保存されました (ID: ${savedData.id})`);
+        console.log(`✅ 月歌がデータベースに保存されました (ID: ${savedData.id})`);
         await fetchRecentTsukiutas(); // リストを更新
-
+      } else {
+        console.warn('⚠️ データベース保存に失敗: レスポンスが空です');
       }
     } catch (error) {
-      console.error('Error saving tsukiuta:', error);
+      console.error('❌ Error saving tsukiuta:', error);
+      throw error; // エラーを上位に伝播
     } finally {
       setIsSaving(false);
     }
