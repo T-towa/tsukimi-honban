@@ -271,6 +271,82 @@ class TsukiutaModel {
       };
     }
   }
+
+  // プレイヤーのポイントを取得
+  async fetchPlayerPoints(deviceId) {
+    if (!this.isConfigured) {
+      console.log('⚠️ Supabase未設定: ポイント取得をスキップします');
+      return 0;
+    }
+
+    try {
+      const response = await fetch(
+        `${this.supabaseUrl}/rest/v1/players?device_id=eq.${encodeURIComponent(deviceId)}&select=points`,
+        {
+          headers: {
+            'apikey': this.supabaseAnonKey,
+            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          console.log('✅ ポイント取得成功:', data[0].points);
+          return data[0].points || 0;
+        } else {
+          console.log('⚠️ プレイヤーが見つかりません:', deviceId);
+          return 0;
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('❌ ポイント取得エラー:', response.status, errorText);
+        return 0;
+      }
+    } catch (error) {
+      console.error('❌ Error fetching player points:', error);
+      return 0;
+    }
+  }
+
+  // プレイヤーのポイントをリセット（0に設定）
+  async resetPlayerPoints(deviceId) {
+    if (!this.isConfigured) {
+      console.log('⚠️ Supabase未設定: ポイントリセットをスキップします');
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `${this.supabaseUrl}/rest/v1/players?device_id=eq.${encodeURIComponent(deviceId)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': this.supabaseAnonKey,
+            'Authorization': `Bearer ${this.supabaseAnonKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({ points: 0 })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ ポイントリセット成功:', data);
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ ポイントリセットエラー:', response.status, errorText);
+        throw new Error(`ポイントリセットに失敗しました (${response.status}): ${errorText}`);
+      }
+    } catch (error) {
+      console.error('❌ Error resetting player points:', error);
+      throw error;
+    }
+  }
 }
 
 export default TsukiutaModel;

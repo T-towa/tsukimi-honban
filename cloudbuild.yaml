@@ -10,6 +10,12 @@ steps:
       - 'REACT_APP_SUPABASE_URL=${_SUPABASE_URL}'
       - '--build-arg'
       - 'REACT_APP_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}'
+      - '--build-arg'
+      - 'REACT_APP_CLAUDE_API_KEY=${_CLAUDE_API_KEY}'
+      - '--build-arg'
+      - 'REACT_APP_CLAUDE_API_URL=https://api.anthropic.com/v1/messages'
+      - '--build-arg'
+      - 'REACT_APP_CLAUDE_MODEL=claude-sonnet-4-20250514'
       - '.'
 
   # Push the image to Container Registry
@@ -42,7 +48,7 @@ steps:
       - '--min-instances'
       - '1'
       - '--set-env-vars'
-      - 'CLAUDE_API_KEY=${_CLAUDE_API_KEY}'
+      - 'CLAUDE_API_KEY=${_CLAUDE_API_KEY},NODE_ENV=production'
 
 images:
   - 'gcr.io/$PROJECT_ID/tsukiuta-web:$BUILD_ID'
