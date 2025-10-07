@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import TsukiutaModel from '../models/TsukiutaModel';
+import { getDeviceIdFromURL } from '../utils/deviceUtils';
 
 // Controller層 - ビジネスロジックと状態管理
 export const useTsukiutaController = () => {
@@ -21,6 +22,11 @@ export const useTsukiutaController = () => {
   // Unity設定状態
   const [unityEndpoint, setUnityEndpoint] = useState('');
   const [unityEnabled, setUnityEnabled] = useState(false);
+
+  // ポイント管理状態
+  const [deviceId, setDeviceId] = useState(null);
+  const [userPoints, setUserPoints] = useState(0);
+  const [isLoadingPoints, setIsLoadingPoints] = useState(false);
 
   // Model層のインスタンス
   const model = new TsukiutaModel();
@@ -50,11 +56,52 @@ export const useTsukiutaController = () => {
     }
   };
 
+  // ポイントを取得
+  const fetchUserPoints = async () => {
+    const currentDeviceId = getDeviceIdFromURL();
+    if (!currentDeviceId || !isSupabaseConfigured) {
+      setIsLoadingPoints(false);
+      return;
+    }
+
+    setIsLoadingPoints(true);
+    try {
+      const points = await model.fetchPlayerPoints(currentDeviceId);
+      setUserPoints(points);
+      setDeviceId(currentDeviceId);
+    } catch (error) {
+      console.error('ポイント取得エラー:', error);
+      setUserPoints(0);
+    } finally {
+      setIsLoadingPoints(false);
+    }
+  };
+
+  // ポイントをリセット（0に設定）
+  const resetUserPoints = async () => {
+    if (!deviceId || !isSupabaseConfigured) return;
+
+    try {
+      await model.resetPlayerPoints(deviceId);
+      setUserPoints(0);
+      console.log('✅ ポイントをリセットしました');
+    } catch (error) {
+      console.error('❌ ポイントリセットエラー:', error);
+      throw error;
+    }
+  };
+
   // 月歌を生成
   const generateTsukiuta = async (feelings) => {
     // WizardFormから渡された感情を使用、またはselectedFeelingsフォールバック
     const feelingsToUse = feelings || selectedFeelings;
     if (feelingsToUse.length === 0) return;
+
+    // ポイントチェック: 0ポイントの場合は生成不可
+    if (userPoints === 0) {
+      alert('ポイントが0のため、月歌を送ることができません。\n体験コンテンツでポイントを集めてください。');
+      return;
+    }
 
     setIsGenerating(true);
     try {
@@ -81,6 +128,14 @@ export const useTsukiutaController = () => {
       } catch (saveError) {
         console.error('Supabase保存エラー:', saveError);
         // 保存エラーでもメイン処理は継続
+      }
+
+      // 月歌送信後、ポイントをリセット
+      try {
+        await resetUserPoints();
+      } catch (resetError) {
+        console.error('ポイントリセットエラー:', resetError);
+        // リセットエラーでもメイン処理は継続
       }
 
       // アニメーション表示
@@ -224,6 +279,8 @@ export const useTsukiutaController = () => {
 
     if (isSupabaseConfigured) {
       fetchRecentTsukiutas();
+      // ポイント取得
+      fetchUserPoints();
     }
   }, [isSupabaseConfigured]);
 
@@ -247,6 +304,11 @@ export const useTsukiutaController = () => {
     unityEndpoint,
     unityEnabled,
 
+    // ポイント管理状態
+    deviceId,
+    userPoints,
+    isLoadingPoints,
+
     // アクション
     selectFeeling,
     addCustomFeeling,
@@ -258,6 +320,8 @@ export const useTsukiutaController = () => {
     toggleHistory,
     clearSelections,
     updateUnityConfiguration,
+    fetchUserPoints,
+    resetUserPoints,
 
     // 値設定
     setCustomFeeling

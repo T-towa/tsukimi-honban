@@ -5,6 +5,8 @@ import WizardForm from './components/web/WizardForm';
 import TsukiutaIntro from './components/web/TsukiutaIntro';
 import ShareSection from './components/web/ShareSection';
 import BottomTabs from './components/web/BottomTabs';
+import PointsCard from './components/web/PointsCard';
+import DebugPanel from './components/web/DebugPanel';
 
 const TsukiutaGenerator = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -26,12 +28,23 @@ const TsukiutaGenerator = () => {
     unityEndpoint,
     unityEnabled,
 
+    // ポイント管理
+    deviceId,
+    userPoints,
+    isLoadingPoints,
+
     // アクション
     setCustomFeeling,
     generateTsukiuta,
-    clearSelections
+    clearSelections,
+    fetchUserPoints
 
   } = useTsukiutaController();
+
+  // デバッグモード: デバイスID変更時にポイントを再取得
+  const handleDebugDeviceIdChange = () => {
+    fetchUserPoints();
+  };
 
   // タブ変更時のハンドラー
   const handleTabChange = (tabId) => {
@@ -61,6 +74,14 @@ const TsukiutaGenerator = () => {
               ホーム
             </h2>
 
+            {/* ポイントカード表示 */}
+            <div className="mb-8">
+              <PointsCard
+                points={userPoints}
+                isLoading={isLoadingPoints}
+                deviceId={deviceId}
+              />
+            </div>
 
             {/* その他のホーム機能 */}
             <div className="text-center">
@@ -124,6 +145,13 @@ const TsukiutaGenerator = () => {
       <BottomTabs
         activeTab={activeTab}
         onTabChange={handleTabChange}
+      />
+
+      {/* デバッグパネル */}
+      <DebugPanel
+        currentDeviceId={deviceId}
+        onDeviceIdChange={handleDebugDeviceIdChange}
+        onRefreshPoints={fetchUserPoints}
       />
 
       <style jsx>{`
