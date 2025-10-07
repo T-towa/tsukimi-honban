@@ -71,7 +71,7 @@ const TsukiutaGenerator = () => {
         return (
           <div className="py-8">
             <h2 className="text-3xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              ホーム
+              ポイント
             </h2>
 
             {/* ポイントカード表示 */}
@@ -81,15 +81,6 @@ const TsukiutaGenerator = () => {
                 isLoading={isLoadingPoints}
                 deviceId={deviceId}
               />
-            </div>
-
-            {/* その他のホーム機能 */}
-            <div className="text-center">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto">
-                <div className="text-6xl mb-4">🏠</div>
-                <p className="text-lg mb-4">その他の機能</p>
-                <p className="text-white/70">実装予定</p>
-              </div>
             </div>
           </div>
         );
@@ -108,7 +99,13 @@ const TsukiutaGenerator = () => {
         );
       case 'tsukiuta':
         if (!showWizard) {
-          return <TsukiutaIntro onStartGeneration={handleStartGeneration} />;
+          return (
+            <TsukiutaIntro
+              onStartGeneration={handleStartGeneration}
+              userPoints={userPoints}
+              isDisabled={userPoints === 0}
+            />
+          );
         }
         return (
           <>

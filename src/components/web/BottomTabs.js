@@ -5,9 +5,9 @@ const BottomTabs = ({ activeTab, onTabChange }) => {
   const tabs = [
     {
       id: 'home',
-      label: 'ホーム',
+      label: 'ポイント',
       icon: Home,
-      comingSoon: true
+      comingSoon: false
     },
     {
       id: 'experience',
