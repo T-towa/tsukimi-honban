@@ -1,7 +1,7 @@
 import React from 'react';
-import { Send, Sparkles, Moon, Heart } from 'lucide-react';
+import { Send, Sparkles, Moon, Heart, Lock } from 'lucide-react';
 
-const TsukiutaIntro = ({ onStartGeneration }) => {
+const TsukiutaIntro = ({ onStartGeneration, userPoints = 0, isDisabled = false }) => {
   return (
     <div className="text-center py-12">
       {/* メインタイトル */}
@@ -27,21 +27,50 @@ const TsukiutaIntro = ({ onStartGeneration }) => {
 
       {/* 生成開始ボタン */}
       <button
-        onClick={onStartGeneration}
-        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-8 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 mx-auto transition-all transform hover:scale-105 shadow-lg"
-        style={{
-          boxShadow: '0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)'
-        }}
+        onClick={isDisabled ? null : onStartGeneration}
+        disabled={isDisabled}
+        className={`px-8 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 mx-auto transition-all shadow-lg ${
+          isDisabled
+            ? 'bg-gray-600 cursor-not-allowed opacity-50'
+            : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transform hover:scale-105'
+        }`}
+        style={
+          isDisabled
+            ? {}
+            : {
+                boxShadow: '0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(236, 72, 153, 0.2)'
+              }
+        }
       >
-        <Send className="w-6 h-6" />
-        月歌を作り始める
+        {isDisabled ? (
+          <>
+            <Lock className="w-6 h-6" />
+            ポイントが必要です
+          </>
+        ) : (
+          <>
+            <Send className="w-6 h-6" />
+            月歌を作り始める
+          </>
+        )}
       </button>
 
       {/* フッターメッセージ */}
       <div className="mt-8">
-        <p className="text-white/50 text-sm">
-          あなたの心に残った瞬間を、美しい月歌に変えてみませんか
-        </p>
+        {isDisabled ? (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 max-w-md mx-auto">
+            <p className="text-red-300 text-sm font-semibold mb-2">
+              ⚠️ ポイントが0のため月歌を作成できません
+            </p>
+            <p className="text-white/70 text-xs">
+              体験コンテンツでポイントを集めてください
+            </p>
+          </div>
+        ) : (
+          <p className="text-white/50 text-sm">
+            あなたの心に残った瞬間を、美しい月歌に変えてみませんか
+          </p>
+        )}
       </div>
     </div>
   );
