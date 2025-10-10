@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 // Node.js 18以降でfetchが利用可能であることを確認
 if (typeof fetch === 'undefined') {
@@ -206,6 +207,32 @@ app.post('/api/unity/record-change', async (req, res) => {
   }
 });
 
+// データクリーニングヘルパー関数
+function cleanText(text) {
+  if (!text) return text;
+  // 制御文字を除去
+  return text.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+}
+
+function cleanReading(reading) {
+  if (!reading) return reading;
+  // ひらがな、カタカナ、漢字、スペース以外を除去
+  return reading.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3000\s]/g, '').trim();
+}
+
+function cleanTsukiutaData(tsukiuta) {
+  return {
+    ...tsukiuta,
+    impression: cleanText(tsukiuta.impression),
+    tsukiuta: cleanText(tsukiuta.tsukiuta),
+    line1: cleanText(tsukiuta.line1),
+    line2: cleanText(tsukiuta.line2),
+    line3: cleanText(tsukiuta.line3),
+    reading: cleanReading(tsukiuta.reading),
+    explanation: cleanText(tsukiuta.explanation)
+  };
+}
+
 // Unity用: 未送信の月歌を取得してis_sent_to_unityを更新
 app.get('/api/get-pending-tsukiutas', async (req, res) => {
   try {
@@ -219,29 +246,55 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    // is_sent_to_unity = false の月歌を取得
-    const fetchResponse = await fetch(
-      `${supabaseUrl}/rest/v1/tsukiutas?is_sent_to_unity=eq.false&order=created_at.asc&limit=10`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
+    // まずis_sent_to_unityフィールドが存在するかチェック
+    let pendingTsukiutas;
+    let usesSentFlag = false;
+
+    try {
+      // is_sent_to_unity = false の月歌を取得を試行
+      const fetchResponse = await fetch(
+        `${supabaseUrl}/rest/v1/tsukiutas?is_sent_to_unity=eq.false&order=created_at.asc&limit=10`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
         }
+      );
+
+      if (fetchResponse.ok) {
+        pendingTsukiutas = await fetchResponse.json();
+        usesSentFlag = true;
+      } else {
+        throw new Error('Field may not exist');
       }
-    );
+    } catch (fieldError) {
+      // is_sent_to_unityフィールドが存在しない場合、最新10件を取得
+      console.log('⚠️ is_sent_to_unity field not found, fetching latest 10 tsukiutas');
+      const fallbackResponse = await fetch(
+        `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc&limit=10`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-    if (!fetchResponse.ok) {
-      const errorText = await fetchResponse.text();
-      console.error('Supabase fetch error:', errorText);
-      return res.status(502).json({
-        success: false,
-        error: 'Failed to fetch pending tsukiutas',
-        message: errorText
-      });
+      if (!fallbackResponse.ok) {
+        const errorText = await fallbackResponse.text();
+        console.error('Supabase fetch error:', errorText);
+        return res.status(502).json({
+          success: false,
+          error: 'Failed to fetch tsukiutas',
+          message: errorText
+        });
+      }
+
+      pendingTsukiutas = await fallbackResponse.json();
     }
-
-    const pendingTsukiutas = await fetchResponse.json();
 
     if (pendingTsukiutas.length === 0) {
       return res.json({
@@ -252,40 +305,51 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    // 取得した月歌のIDリストを作成
-    const tsukiutaIds = pendingTsukiutas.map(t => t.id);
+    // データをクリーニング
+    const cleanedTsukiutas = pendingTsukiutas.map(cleanTsukiutaData);
 
-    // is_sent_to_unity = true に更新
-    const updateResponse = await fetch(
-      `${supabaseUrl}/rest/v1/tsukiutas?id=in.(${tsukiutaIds.join(',')})`,
-      {
-        method: 'PATCH',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-          is_sent_to_unity: true,
-          sent_to_unity_at: new Date().toISOString()
-        })
+    // is_sent_to_unityフィールドが存在する場合のみ更新
+    if (usesSentFlag) {
+      const tsukiutaIds = pendingTsukiutas.map(t => t.id);
+      console.log(`🔄 Updating ${tsukiutaIds.length} tsukiutas to is_sent_to_unity=true, IDs: ${tsukiutaIds.join(',')}`);
+
+      const updateResponse = await fetch(
+        `${supabaseUrl}/rest/v1/tsukiutas?id=in.(${tsukiutaIds.join(',')})`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            is_sent_to_unity: true,
+            sent_to_unity_at: new Date().toISOString()
+          })
+        }
+      );
+
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        console.error('❌ Supabase update error:', updateResponse.status, errorText);
+        // 更新失敗でもデータは返す
+      } else {
+        const updateResult = await updateResponse.json();
+        console.log(`✅ Successfully updated ${updateResult.length} tsukiutas to is_sent_to_unity=true`);
       }
-    );
-
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error('Supabase update error:', errorText);
-      // 更新失敗でもデータは返す
+    } else {
+      console.log('⚠️ is_sent_to_unity field not available, skipping update');
     }
 
-    console.log(`✅ Unity用に${pendingTsukiutas.length}件の月歌を送信`);
+    console.log(`✅ Unity用に${cleanedTsukiutas.length}件の月歌を送信 (送信フラグ: ${usesSentFlag ? '使用' : '未使用'})`);
 
     return res.json({
       success: true,
-      count: pendingTsukiutas.length,
-      tsukiutas: pendingTsukiutas,
-      message: `${pendingTsukiutas.length} tsukiutas sent to Unity`
+      count: cleanedTsukiutas.length,
+      tsukiutas: cleanedTsukiutas,
+      message: `${cleanedTsukiutas.length} tsukiutas sent to Unity`,
+      usesSentFlag: usesSentFlag
     });
 
   } catch (error) {
