@@ -36,11 +36,11 @@ const WizardForm = ({
   ];
 
   const impressionOptions = [
-    'かぐや姫の世界に入り込んだよう',
-    '月の美しさに心が洗われた',
-    '大切な人との特別な時間',
-    '金沢の新しい魅力を発見',
-    '日常を忘れる幻想的なひととき'
+    '楽しかった',
+    '美しかった',
+    '感動した',
+    '面白かった',
+    '思い出に残った'
   ];
 
   const handleOptionSelect = (field, value) => {

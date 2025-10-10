@@ -26,3 +26,4 @@ SELECT
   COUNT(CASE WHEN reading ~ '[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3000\s]' THEN 1 END) as records_with_invalid_chars
 FROM tsukiutas;
 
+
