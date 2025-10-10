@@ -239,6 +239,8 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
     // Unity API用にはservice_role_keyを使用（より強い権限でUPDATE可能）
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const usingServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log(`🔑 Using ${usingServiceRole ? 'SERVICE_ROLE' : 'ANON'} key for Supabase operations`);
 
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
@@ -314,22 +316,26 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       const tsukiutaIds = pendingTsukiutas.map(t => t.id);
       console.log(`🔄 Updating ${tsukiutaIds.length} tsukiutas to is_sent_to_unity=true, IDs: ${tsukiutaIds.join(',')}`);
 
-      const updateResponse = await fetch(
-        `${supabaseUrl}/rest/v1/tsukiutas?id=in.(${tsukiutaIds.join(',')})`,
-        {
-          method: 'PATCH',
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({
-            is_sent_to_unity: true,
-            sent_to_unity_at: new Date().toISOString()
-          })
-        }
-      );
+      const updateUrl = `${supabaseUrl}/rest/v1/tsukiutas?id=in.(${tsukiutaIds.join(',')})`;
+      const updateBody = {
+        is_sent_to_unity: true,
+        sent_to_unity_at: new Date().toISOString()
+      };
+      
+      console.log(`📡 UPDATE URL: ${updateUrl}`);
+      console.log(`📦 UPDATE Body:`, updateBody);
+      console.log(`🔑 Using key type: ${usingServiceRole ? 'SERVICE_ROLE' : 'ANON'}`);
+
+      const updateResponse = await fetch(updateUrl, {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(updateBody)
+      });
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text();
