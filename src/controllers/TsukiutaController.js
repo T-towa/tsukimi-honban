@@ -130,12 +130,13 @@ export const useTsukiutaController = () => {
       // Supabaseに保存
       await saveTsukiutaToDatabase(generatedTsukiuta);
 
-      // ポイントをリセット
-      try {
-        await resetUserPoints();
-      } catch (resetError) {
-        console.error('ポイントリセットエラー:', resetError);
-      }
+      // ポイントをリセット（失敗時は月歌送信も失敗とする）
+      console.log('🔄 ポイントをリセット中...');
+      await resetUserPoints();
+
+      // ポイントリセット後、DBから再取得して確認
+      console.log('🔄 ポイントを再取得して確認中...');
+      await fetchUserPoints();
 
       // 送信済みフラグを更新
       setGeneratedTsukiuta({ ...generatedTsukiuta, isSent: true });
