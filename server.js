@@ -237,7 +237,8 @@ function cleanTsukiutaData(tsukiuta) {
 app.get('/api/get-pending-tsukiutas', async (req, res) => {
   try {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-    const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    // Unity API用にはservice_role_keyを使用（より強い権限でUPDATE可能）
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
