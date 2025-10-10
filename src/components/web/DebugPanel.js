@@ -4,13 +4,12 @@ import { setDeviceId } from '../../utils/deviceUtils';
 const DebugPanel = ({ currentDeviceId, onDeviceIdChange, onRefreshPoints }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputDeviceId, setInputDeviceId] = useState('');
+  const [unityApiResult, setUnityApiResult] = useState(null);
+  const [isTestingUnityApi, setIsTestingUnityApi] = useState(false);
 
-  // サンプルデバイスID (players_rows.csvより)
+  // サンプルデバイスID (本番環境用)
   const sampleDeviceIds = [
-    'AA:BB:CC:DD:EE:FF',
-    'AA:BB:CC:EE:FF',
-    'AA%3aBB%3aCC%3aDD%3aEE%3aFF',
-    'hci0 (usb:v1D6Bp0246d0552)'
+    'B8:27:EB:82:24:23'
   ];
 
   const handleSetDeviceId = () => {
@@ -34,6 +33,32 @@ const DebugPanel = ({ currentDeviceId, onDeviceIdChange, onRefreshPoints }) => {
     localStorage.removeItem('device_id');
     if (onDeviceIdChange) {
       onDeviceIdChange();
+    }
+  };
+
+  // Unity APIテスト
+  const handleTestUnityApi = async () => {
+    setIsTestingUnityApi(true);
+    setUnityApiResult(null);
+
+    try {
+      const response = await fetch('/api/get-pending-tsukiutas');
+      const data = await response.json();
+
+      setUnityApiResult({
+        success: response.ok,
+        status: response.status,
+        data: data,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      setUnityApiResult({
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      setIsTestingUnityApi(false);
     }
   };
 
@@ -127,6 +152,53 @@ const DebugPanel = ({ currentDeviceId, onDeviceIdChange, onRefreshPoints }) => {
             </button>
           </div>
 
+          {/* Unity APIテスト */}
+          <div className="mb-6 border-t border-white/20 pt-6">
+            <label className="block text-sm font-semibold text-white/90 mb-2">
+              🎮 Unity API テスト
+            </label>
+            <button
+              onClick={handleTestUnityApi}
+              disabled={isTestingUnityApi}
+              className="w-full bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white font-semibold px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {isTestingUnityApi ? '🔄 テスト中...' : '📡 Unity API を呼び出す'}
+            </button>
+
+            {/* API結果表示 */}
+            {unityApiResult && (
+              <div className="mt-3 bg-black/50 rounded-lg p-3 max-h-60 overflow-y-auto">
+                <div className="text-xs font-mono text-white/80 space-y-1">
+                  <div className={`font-semibold ${unityApiResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                    {unityApiResult.success ? '✅ 成功' : '❌ 失敗'}
+                  </div>
+                  <div className="text-white/60">Status: {unityApiResult.status}</div>
+                  {unityApiResult.data && (
+                    <>
+                      <div className="text-white/60">件数: {unityApiResult.data.count || 0}</div>
+                      {unityApiResult.data.tsukiutas && unityApiResult.data.tsukiutas.length > 0 && (
+                        <div className="mt-2 text-white/80">
+                          <div className="font-semibold mb-1">送信された月歌:</div>
+                          {unityApiResult.data.tsukiutas.map((t, i) => (
+                            <div key={i} className="ml-2 text-xs border-l-2 border-purple-500 pl-2 py-1">
+                              {t.tsukiuta}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {unityApiResult.error && (
+                    <div className="text-red-400">Error: {unityApiResult.error}</div>
+                  )}
+                  <div className="text-white/40 text-xs mt-2">
+                    {new Date(unityApiResult.timestamp).toLocaleString('ja-JP')}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* 注意事項 */}
           <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3">
             <div className="text-xs text-yellow-200">
@@ -135,6 +207,7 @@ const DebugPanel = ({ currentDeviceId, onDeviceIdChange, onRefreshPoints }) => {
                 <li>本番環境では非表示推奨</li>
                 <li>ポイントはSupabaseから取得</li>
                 <li>device_idはLocalStorageに保存</li>
+                <li>Unity APIは5秒間隔でポーリング</li>
               </ul>
             </div>
           </div>

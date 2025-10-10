@@ -91,7 +91,7 @@ export const useTsukiutaController = () => {
     }
   };
 
-  // 月歌を生成
+  // 月歌を生成（送信はしない）
   const generateTsukiuta = async (feelings) => {
     // WizardFormから渡された感情を使用、またはselectedFeelingsフォールバック
     const feelingsToUse = feelings || selectedFeelings;
@@ -106,37 +106,8 @@ export const useTsukiutaController = () => {
     setIsGenerating(true);
     try {
       const result = await model.generateTsukiuta(feelingsToUse);
-      setGeneratedTsukiuta(result);
-
-      // Unityに通知を送信（設定されている場合）
-      if (unityEnabled && unityEndpoint) {
-        try {
-          const unityResult = await model.notifyUnity(result, unityEndpoint);
-          if (unityResult.success) {
-            console.log('月歌をUnityに送信しました');
-          } else {
-            console.warn('Unity通知に失敗:', unityResult.message);
-          }
-        } catch (unityError) {
-          console.error('Unity通知エラー:', unityError);
-        }
-      }
-
-      // Supabaseに保存（環境変数が設定されていれば自動保存）
-      try {
-        await saveTsukiutaToDatabase(result);
-      } catch (saveError) {
-        console.error('Supabase保存エラー:', saveError);
-        // 保存エラーでもメイン処理は継続
-      }
-
-      // 月歌送信後、ポイントをリセット
-      try {
-        await resetUserPoints();
-      } catch (resetError) {
-        console.error('ポイントリセットエラー:', resetError);
-        // リセットエラーでもメイン処理は継続
-      }
+      // isSent フラグを追加（まだ送信していない状態）
+      setGeneratedTsukiuta({ ...result, isSent: false });
 
       // アニメーション表示
       setShowAnimation(true);
@@ -147,6 +118,35 @@ export const useTsukiutaController = () => {
       alert(`月歌の生成に失敗しました: ${error.message}`);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // 月歌を月に送る（Supabaseに保存 & ポイント消費）
+  const sendTsukiutaToMoon = async () => {
+    if (!generatedTsukiuta || generatedTsukiuta.isSent) return;
+
+    setIsSaving(true);
+    try {
+      // Supabaseに保存
+      await saveTsukiutaToDatabase(generatedTsukiuta);
+
+      // ポイントをリセット（失敗時は月歌送信も失敗とする）
+      console.log('🔄 ポイントをリセット中...');
+      await resetUserPoints();
+
+      // ポイントリセット後、DBから再取得して確認
+      console.log('🔄 ポイントを再取得して確認中...');
+      await fetchUserPoints();
+
+      // 送信済みフラグを更新
+      setGeneratedTsukiuta({ ...generatedTsukiuta, isSent: true });
+
+      console.log('✅ 月歌を月に届けました');
+    } catch (error) {
+      console.error('❌ 月歌送信エラー:', error);
+      alert(`月歌の送信に失敗しました: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -313,6 +313,7 @@ export const useTsukiutaController = () => {
     selectFeeling,
     addCustomFeeling,
     generateTsukiuta,
+    sendTsukiutaToMoon,
     fetchRecentTsukiutas,
     saveTsukiutaToDatabase,
     updateConfiguration,

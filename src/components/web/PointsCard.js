@@ -4,11 +4,11 @@ const PointsCard = ({ points, isLoading, deviceId }) => {
   // ポイントに応じた装飾レベルの説明
   const getDecorationLevel = (points) => {
     if (points === 0) return { level: 0, description: "ポイントがありません。体験コンテンツでポイントを集めましょう！" };
-    if (points === 1) return { level: 1, description: "シンプルな月の装飾" };
-    if (points === 2) return { level: 2, description: "月と星の装飾" };
-    if (points === 3) return { level: 3, description: "月・星・光の装飾" };
-    if (points === 4) return { level: 4, description: "華やかな月夜の装飾" };
-    if (points === 5) return { level: 5, description: "最高級の幻想的な装飾" };
+    if (points === 1) return { level: 1, description: "1ポイント獲得！ポイントをもっと集めよう" };
+    if (points === 2) return { level: 2, description: "2ポイント獲得！月歌が豪華になってきたよ" };
+    if (points === 3) return { level: 3, description: "3ポイント獲得！体験は残り二つ！頑張ろう！！" };
+    if (points === 4) return { level: 4, description: "4ポイント獲得！もうすぐ月歌が完成するよ" };
+    if (points === 5) return { level: 5, description: "さあ、月歌を作りましょう！！" };
     return { level: 0, description: "" };
   };
 

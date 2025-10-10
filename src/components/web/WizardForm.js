@@ -5,7 +5,9 @@ const WizardForm = ({
   generatedTsukiuta,
   isGenerating,
   onGenerate,
-  onReset
+  onReset,
+  onSendToMoon,
+  isSending = false
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [stepData, setStepData] = useState({
@@ -34,11 +36,11 @@ const WizardForm = ({
   ];
 
   const impressionOptions = [
-    'かぐや姫の世界に入り込んだよう',
-    '月の美しさに心が洗われた',
-    '大切な人との特別な時間',
-    '金沢の新しい魅力を発見',
-    '日常を忘れる幻想的なひととき'
+    '楽しかった',
+    '美しかった',
+    '感動した',
+    '面白かった',
+    '思い出に残った'
   ];
 
   const handleOptionSelect = (field, value) => {
@@ -454,9 +456,48 @@ const WizardForm = ({
               音数: {generatedTsukiuta.syllables_line1}-{generatedTsukiuta.syllables_line2}-{generatedTsukiuta.syllables_line3}
             </div>
           </div>
+
+          {/* 月歌を送るボタン */}
+          <button
+            onClick={onSendToMoon}
+            disabled={isSending || generatedTsukiuta.isSent}
+            className={`w-full mt-6 px-6 py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-3 transition-all transform ${
+              generatedTsukiuta.isSent
+                ? 'bg-green-600/50 cursor-not-allowed'
+                : isSending
+                ? 'bg-purple-500/50 cursor-wait'
+                : 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 hover:scale-105 shadow-lg'
+            }`}
+            style={
+              !generatedTsukiuta.isSent && !isSending
+                ? {
+                    boxShadow: '0 0 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(249, 115, 22, 0.3)'
+                  }
+                : {}
+            }
+          >
+            {generatedTsukiuta.isSent ? (
+              <>
+                <span className="text-2xl">✓</span>
+                月に届けました
+              </>
+            ) : isSending ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                月に届けています...
+              </>
+            ) : (
+              <>
+                <span className="text-2xl">🌙</span>
+                月歌を月に届ける
+              </>
+            )}
+          </button>
+
+          {/* 新しい月歌を作るボタン */}
           <button
             onClick={handleNewTsukiuta}
-            className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all transform hover:scale-105"
+            className="w-full mt-4 bg-white/20 hover:bg-white/30 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all"
           >
             <RefreshCw className="w-5 h-5" />
             新しい月歌を作る

@@ -202,11 +202,14 @@ public class TsukiutaWebSocketClient : MonoBehaviour
             var tsukiutaJson = message.data.ToString();
             var tsukiutaData = JsonConvert.DeserializeObject<TsukiutaData>(tsukiutaJson);
             
-            DebugLog($"New Tsukiuta received: {tsukiutaData.tsukiuta}");
+            // データクリーンアップを実行
+            var cleanedData = CleanTsukiutaData(tsukiutaData);
+            
+            DebugLog($"New Tsukiuta received: {cleanedData.tsukiuta}");
             
             // メインスレッドで実行
             StartCoroutine(InvokeOnMainThread(() => {
-                OnTsukiutaReceived?.Invoke(tsukiutaData);
+                OnTsukiutaReceived?.Invoke(cleanedData);
             }));
         }
         catch (Exception e)
@@ -289,6 +292,54 @@ public class TsukiutaWebSocketClient : MonoBehaviour
     /// 接続状態確認
     /// </summary>
     public bool IsConnected => isConnected;
+    
+    /// <summary>
+    /// 月歌データをクリーンアップして不正な文字を除去
+    /// </summary>
+    private TsukiutaData CleanTsukiutaData(TsukiutaData originalData)
+    {
+        var cleanedData = new TsukiutaData
+        {
+            impression = CleanText(originalData.impression),
+            tsukiuta = CleanText(originalData.tsukiuta),
+            line1 = CleanText(originalData.line1),
+            line2 = CleanText(originalData.line2),
+            line3 = CleanText(originalData.line3),
+            syllables_line1 = originalData.syllables_line1,
+            syllables_line2 = originalData.syllables_line2,
+            syllables_line3 = originalData.syllables_line3,
+            reading = CleanReading(originalData.reading),
+            explanation = CleanText(originalData.explanation)
+        };
+        
+        return cleanedData;
+    }
+    
+    /// <summary>
+    /// テキストから制御文字を除去
+    /// </summary>
+    private string CleanText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+            
+        // 制御文字を除去
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(text, @"[\x00-\x1F\x7F-\x9F]", "");
+        return cleaned.Trim();
+    }
+    
+    /// <summary>
+    /// 読み仮名から不正な文字を除去（日本語文字のみ許可）
+    /// </summary>
+    private string CleanReading(string reading)
+    {
+        if (string.IsNullOrEmpty(reading))
+            return reading;
+            
+        // ひらがな、カタカナ、漢字、スペース以外を除去
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(reading, @"[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3000\s]", "");
+        return cleaned.Trim();
+    }
 }
 
 /// <summary>

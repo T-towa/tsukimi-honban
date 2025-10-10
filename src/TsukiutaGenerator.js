@@ -36,6 +36,7 @@ const TsukiutaGenerator = () => {
     // アクション
     setCustomFeeling,
     generateTsukiuta,
+    sendTsukiutaToMoon,
     clearSelections,
     fetchUserPoints
 
@@ -114,9 +115,11 @@ const TsukiutaGenerator = () => {
               isGenerating={isGenerating}
               onGenerate={generateTsukiuta}
               onReset={handleResetToIntro}
+              onSendToMoon={sendTsukiutaToMoon}
+              isSending={isSaving}
             />
 
-            {generatedTsukiuta && (
+            {generatedTsukiuta && generatedTsukiuta.isSent && (
               <ShareSection tsukiuta={generatedTsukiuta} />
             )}
           </>
