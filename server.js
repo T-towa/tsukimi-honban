@@ -206,6 +206,98 @@ app.post('/api/unity/record-change', async (req, res) => {
   }
 });
 
+// Unity用: 未送信の月歌を取得してis_sent_to_unityを更新
+app.get('/api/get-pending-tsukiutas', async (req, res) => {
+  try {
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+    const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Supabase configuration missing'
+      });
+    }
+
+    // is_sent_to_unity = false の月歌を取得
+    const fetchResponse = await fetch(
+      `${supabaseUrl}/rest/v1/tsukiutas?is_sent_to_unity=eq.false&order=created_at.asc&limit=10`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (!fetchResponse.ok) {
+      const errorText = await fetchResponse.text();
+      console.error('Supabase fetch error:', errorText);
+      return res.status(502).json({
+        success: false,
+        error: 'Failed to fetch pending tsukiutas',
+        message: errorText
+      });
+    }
+
+    const pendingTsukiutas = await fetchResponse.json();
+
+    if (pendingTsukiutas.length === 0) {
+      return res.json({
+        success: true,
+        count: 0,
+        tsukiutas: [],
+        message: 'No pending tsukiutas'
+      });
+    }
+
+    // 取得した月歌のIDリストを作成
+    const tsukiutaIds = pendingTsukiutas.map(t => t.id);
+
+    // is_sent_to_unity = true に更新
+    const updateResponse = await fetch(
+      `${supabaseUrl}/rest/v1/tsukiutas?id=in.(${tsukiutaIds.join(',')})`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          is_sent_to_unity: true,
+          sent_to_unity_at: new Date().toISOString()
+        })
+      }
+    );
+
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      console.error('Supabase update error:', errorText);
+      // 更新失敗でもデータは返す
+    }
+
+    console.log(`✅ Unity用に${pendingTsukiutas.length}件の月歌を送信`);
+
+    return res.json({
+      success: true,
+      count: pendingTsukiutas.length,
+      tsukiutas: pendingTsukiutas,
+      message: `${pendingTsukiutas.length} tsukiutas sent to Unity`
+    });
+
+  } catch (error) {
+    console.error('Error in get-pending-tsukiutas:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
 // Unity通知用APIエンドポイント
 app.post('/api/notify-unity', async (req, res) => {
   const { tsukiuta, unityEndpoint } = req.body;

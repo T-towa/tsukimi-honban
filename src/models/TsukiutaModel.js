@@ -105,20 +105,26 @@ class TsukiutaModel {
     }
   }
 
-  // 月歌をデータベースに保存（IDは自動採番）
+  // 月歌をデータベースに保存（IDは自動採番、is_sent_to_unity = false）
   async saveTsukiuta(tsukiutaData) {
     if (!this.isConfigured) {
       console.log('⚠️ Supabase未設定: データベース保存をスキップします');
       return null;
     }
 
-    // IDは除外してデータベースに送信（自動採番のため）
-    const { id, isLocal, ...dataToSave } = tsukiutaData;
+    // IDとローカル用フラグ、送信済みフラグを除外してデータベースに送信
+    const { id, isLocal, isSent, ...dataToSave } = tsukiutaData;
+
+    // Unity送信フラグを追加（デフォルト: false）
+    const dataWithFlags = {
+      ...dataToSave,
+      is_sent_to_unity: false
+    };
 
     console.log('💾 Supabaseへ保存開始...', {
       url: this.supabaseUrl,
       hasKey: !!this.supabaseAnonKey,
-      data: dataToSave
+      data: dataWithFlags
     });
 
     try {
@@ -130,7 +136,7 @@ class TsukiutaModel {
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
-        body: JSON.stringify(dataToSave)
+        body: JSON.stringify(dataWithFlags)
       });
 
       if (response.ok) {
