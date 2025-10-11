@@ -87,19 +87,25 @@ const TsukiutaGenerator = () => {
         );
       case 'survey':
         return (
-          <div className="text-center py-12">
-            <h2 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+          <div className="py-4">
+            <h2 className="text-2xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
               アンケート
             </h2>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto">
-              <div className="text-6xl mb-4">📝</div>
-              <p className="text-lg mb-6">体験についてご感想をお聞かせください</p>
-              <a
-                href="/survey"
-                className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all transform hover:scale-105"
-              >
-                アンケートに回答する →
-              </a>
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-white/20">
+              <div className="w-full overflow-hidden rounded-lg">
+                <iframe
+                  src="https://docs.google.com/forms/d/e/1FAIpQLScE-bM17iPQBQS8IhywEtF_P-gIQ0WLM0NOgDabikpXhluszw/viewform?embedded=true"
+                  width="100%"
+                  height="1520"
+                  frameBorder="0"
+                  marginHeight="0"
+                  marginWidth="0"
+                  title="月歌アンケート"
+                  className="w-full"
+                >
+                  読み込んでいます…
+                </iframe>
+              </div>
             </div>
           </div>
         );
