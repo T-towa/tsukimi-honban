@@ -324,28 +324,35 @@ class TsukiutaModel {
       return false;
     }
 
+    console.log(`🔄 ポイントリセット開始: deviceId=${deviceId}`);
+
     try {
-      const response = await fetch(
-        `${this.supabaseUrl}/rest/v1/players?device_id=eq.${encodeURIComponent(deviceId)}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'apikey': this.supabaseAnonKey,
-            'Authorization': `Bearer ${this.supabaseAnonKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({ points: 0 })
-        }
-      );
+      const url = `${this.supabaseUrl}/rest/v1/players?device_id=eq.${encodeURIComponent(deviceId)}`;
+      console.log(`📡 PATCH URL: ${url}`);
+      console.log(`📦 PATCH Body:`, { points: 0 });
+
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'apikey': this.supabaseAnonKey,
+          'Authorization': `Bearer ${this.supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({ points: 0 })
+      });
+
+      console.log(`📊 Response Status: ${response.status}`);
 
       if (response.ok) {
         const data = await response.json();
         console.log('✅ ポイントリセット成功:', data);
+        console.log(`✅ リセット件数: ${data.length}件`);
         return true;
       } else {
         const errorText = await response.text();
         console.error('❌ ポイントリセットエラー:', response.status, errorText);
+        console.error('❌ 使用したdevice_id:', deviceId);
         throw new Error(`ポイントリセットに失敗しました (${response.status}): ${errorText}`);
       }
     } catch (error) {
