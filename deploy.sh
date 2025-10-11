@@ -25,6 +25,13 @@ if [ -z "$REACT_APP_SUPABASE_URL" ] || [ -z "$REACT_APP_SUPABASE_ANON_KEY" ] || 
     exit 1
 fi
 
+# Service Role Keyを.envから取得（Unity API用）
+if [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+    echo -e "${GREEN}✅ SUPABASE_SERVICE_ROLE_KEY が設定されています${NC}"
+else
+    echo -e "${YELLOW}⚠️ SUPABASE_SERVICE_ROLE_KEY が設定されていません（Unity API機能が制限されます）${NC}"
+fi
+
 # Google Cloud プロジェクトIDの取得
 PROJECT_ID=$(gcloud config get-value project)
 if [ -z "$PROJECT_ID" ]; then
@@ -43,7 +50,8 @@ gcloud builds submit \
   --substitutions=\
 _SUPABASE_URL="${REACT_APP_SUPABASE_URL}",\
 _SUPABASE_ANON_KEY="${REACT_APP_SUPABASE_ANON_KEY}",\
-_CLAUDE_API_KEY="${CLAUDE_API_KEY}"
+_CLAUDE_API_KEY="${CLAUDE_API_KEY}",\
+_SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY}"
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ デプロイ成功！${NC}"

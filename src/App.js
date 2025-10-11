@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TsukiutaGenerator from './TsukiutaGenerator';
-import ChallengesExperience from './components/web/ChallengesExperience';
+import Survey from './components/web/Survey';
 import './App.css';
 
 function App() {
@@ -11,8 +11,8 @@ function App() {
         <Routes>
           <Route path="/" element={<TsukiutaGenerator />} />
           <Route path="/tsukiuta" element={<TsukiutaGenerator />} />
-          <Route path="/challenges" element={<ChallengesExperience />} />
-          <Route path="/experience" element={<ChallengesExperience />} />
+          <Route path="/survey" element={<Survey />} />
+          <Route path="/questionnaire" element={<Survey />} />
         </Routes>
       </div>
     </Router>

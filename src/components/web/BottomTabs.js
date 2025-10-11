@@ -10,10 +10,10 @@ const BottomTabs = ({ activeTab, onTabChange }) => {
       comingSoon: false
     },
     {
-      id: 'experience',
-      label: '体験',
+      id: 'survey',
+      label: 'アンケート',
       icon: Star,
-      comingSoon: true
+      comingSoon: false
     },
     {
       id: 'tsukiuta',

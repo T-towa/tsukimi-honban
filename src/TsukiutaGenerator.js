@@ -85,16 +85,21 @@ const TsukiutaGenerator = () => {
             </div>
           </div>
         );
-      case 'experience':
+      case 'survey':
         return (
-          <div className="text-center py-20">
+          <div className="text-center py-12">
             <h2 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              体験
+              アンケート
             </h2>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto">
-              <div className="text-6xl mb-4">✨</div>
-              <p className="text-lg mb-4">月見光路体験</p>
-              <p className="text-white/70">実装予定</p>
+              <div className="text-6xl mb-4">📝</div>
+              <p className="text-lg mb-6">体験についてご感想をお聞かせください</p>
+              <a
+                href="/survey"
+                className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all transform hover:scale-105"
+              >
+                アンケートに回答する →
+              </a>
             </div>
           </div>
         );
