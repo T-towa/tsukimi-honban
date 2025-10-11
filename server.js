@@ -299,13 +299,10 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       pendingTsukiutas = await fallbackResponse.json();
     }
 
+    // 未送信の月歌が0件の場合は204 No Contentを返す
     if (pendingTsukiutas.length === 0) {
-      return res.json({
-        success: true,
-        count: 0,
-        tsukiutas: [],
-        message: 'No pending tsukiutas'
-      });
+      console.log('📭 No pending tsukiutas found - returning 204 No Content');
+      return res.status(204).send();
     }
 
     // データをクリーニング
