@@ -87,24 +87,35 @@ const TsukiutaGenerator = () => {
         );
       case 'survey':
         return (
-          <div className="py-4">
-            <h2 className="text-2xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              アンケート
-            </h2>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-white/20">
-              <div className="w-full overflow-hidden rounded-lg">
-                <iframe
-                  src="https://docs.google.com/forms/d/e/1FAIpQLScE-bM17iPQBQS8IhywEtF_P-gIQ0WLM0NOgDabikpXhluszw/viewform?embedded=true"
-                  width="100%"
-                  height="1520"
-                  frameBorder="0"
-                  marginHeight="0"
-                  marginWidth="0"
-                  title="月歌アンケート"
-                  className="w-full"
-                >
-                  読み込んでいます…
-                </iframe>
+          <div className="fixed inset-0 top-0 left-0 right-0 bottom-16 bg-gradient-to-b from-indigo-950 via-purple-900 to-indigo-900 z-20 flex flex-col overflow-hidden">
+            {/* ヘッダー部分（固定） */}
+            <div className="flex-shrink-0 pt-6 pb-4 px-4">
+              <h2 className="text-2xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                📝 アンケート
+              </h2>
+              <p className="text-center text-white/70 text-sm mt-2">
+                体験についてのご感想をお聞かせください
+              </p>
+            </div>
+
+            {/* Google Form（スクロール可能） */}
+            <div className="flex-1 px-4 pb-4 overflow-y-auto">
+              <div className="max-w-3xl mx-auto">
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden shadow-2xl border border-white/10">
+                  <iframe
+                    src="https://docs.google.com/forms/d/e/1FAIpQLScE-bM17iPQBQS8IhywEtF_P-gIQ0WLM0NOgDabikpXhluszw/viewform?embedded=true"
+                    width="100%"
+                    height="1600"
+                    frameBorder="0"
+                    marginHeight="0"
+                    marginWidth="0"
+                    title="月歌アンケート"
+                    className="w-full"
+                    style={{ minHeight: '1600px' }}
+                  >
+                    読み込んでいます…
+                  </iframe>
+                </div>
               </div>
             </div>
           </div>
