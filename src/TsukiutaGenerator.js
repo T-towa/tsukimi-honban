@@ -55,6 +55,41 @@ const TsukiutaGenerator = () => {
     }
   };
 
+  // アンケートフォームのページ遷移検知
+  React.useEffect(() => {
+    if (activeTab === 'survey') {
+      const surveyContainer = document.getElementById('survey-scroll-container');
+      if (surveyContainer) {
+        // iframe内のページ遷移を検知するため、定期的にスクロール位置をチェック
+        let lastScrollCheck = Date.now();
+        let isScrolling = false;
+
+        const checkScroll = setInterval(() => {
+          const now = Date.now();
+          const currentScroll = surveyContainer.scrollTop;
+
+          // ユーザーがスクロール中かどうかを判定
+          if (Math.abs(currentScroll - (surveyContainer._lastScroll || 0)) > 5) {
+            lastScrollCheck = now;
+            isScrolling = true;
+          } else if (now - lastScrollCheck > 500) {
+            isScrolling = false;
+          }
+
+          surveyContainer._lastScroll = currentScroll;
+
+          // スクロール位置が下にあり、2秒間スクロールしていない場合は上に戻す
+          if (!isScrolling && currentScroll > 200 && now - lastScrollCheck > 2000) {
+            surveyContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            lastScrollCheck = now; // リセットして連続実行を防ぐ
+          }
+        }, 500);
+
+        return () => clearInterval(checkScroll);
+      }
+    }
+  }, [activeTab]);
+
   // 月歌生成開始ハンドラー
   const handleStartGeneration = () => {
     setShowWizard(true);
@@ -117,19 +152,20 @@ const TsukiutaGenerator = () => {
             </div>
 
             {/* Google Form（スクロール可能） */}
-            <div id="survey-scroll-container" className="flex-1 px-4 pb-4 overflow-y-auto">
+            <div id="survey-scroll-container" className="flex-1 px-4 pb-4 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="max-w-3xl mx-auto">
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden shadow-2xl border border-white/10">
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-visible shadow-2xl border border-white/10">
                   <iframe
                     src="https://docs.google.com/forms/d/e/1FAIpQLScE-bM17iPQBQS8IhywEtF_P-gIQ0WLM0NOgDabikpXhluszw/viewform?embedded=true"
                     width="100%"
-                    height="1600"
+                    height="3000"
                     frameBorder="0"
                     marginHeight="0"
                     marginWidth="0"
                     title="月歌アンケート"
-                    className="w-full"
-                    style={{ minHeight: '1600px' }}
+                    className="w-full block"
+                    scrolling="no"
+                    style={{ minHeight: '3000px', border: 'none', display: 'block' }}
                   >
                     読み込んでいます…
                   </iframe>
