@@ -6,16 +6,23 @@
  */
 export const getDeviceIdFromURL = () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const deviceId = urlParams.get('device_id');
+
+  // 'id'パラメータまたは'device_id'パラメータを取得
+  const deviceId = urlParams.get('id') || urlParams.get('device_id');
 
   if (deviceId) {
     // LocalStorageに保存して次回以降も使用可能にする
     localStorage.setItem('device_id', deviceId);
+    console.log('✅ URLパラメータからdevice_idを設定:', deviceId);
     return deviceId;
   }
 
   // URLになければLocalStorageから取得
-  return localStorage.getItem('device_id');
+  const storedId = localStorage.getItem('device_id');
+  if (storedId) {
+    console.log('📦 LocalStorageからdevice_idを取得:', storedId);
+  }
+  return storedId;
 };
 
 /**
