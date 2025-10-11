@@ -158,14 +158,14 @@ const TsukiutaGenerator = () => {
                   <iframe
                     src="https://docs.google.com/forms/d/e/1FAIpQLScE-bM17iPQBQS8IhywEtF_P-gIQ0WLM0NOgDabikpXhluszw/viewform?embedded=true"
                     width="100%"
-                    height="3000"
+                    height="5000"
                     frameBorder="0"
                     marginHeight="0"
                     marginWidth="0"
                     title="月歌アンケート"
                     className="w-full block"
                     scrolling="no"
-                    style={{ minHeight: '3000px', border: 'none', display: 'block' }}
+                    style={{ minHeight: '5000px', border: 'none', display: 'block' }}
                   >
                     読み込んでいます…
                   </iframe>
