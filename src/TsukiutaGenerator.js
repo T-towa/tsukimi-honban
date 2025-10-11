@@ -55,34 +55,6 @@ const TsukiutaGenerator = () => {
     }
   };
 
-  // アンケートフォームのスクロール制御
-  React.useEffect(() => {
-    if (activeTab === 'survey') {
-      const surveyContainer = document.getElementById('survey-scroll-container');
-      if (surveyContainer) {
-        // iframeの読み込みを監視してスクロールイベントを設定
-        const iframe = surveyContainer.querySelector('iframe');
-        if (iframe) {
-          // Google Formのページ遷移を検知してスクロール
-          const scrollToTop = () => {
-            surveyContainer.scrollTo({ top: 0, behavior: 'smooth' });
-          };
-
-          // 一定間隔でチェック（Google Form内のボタンクリックを検知）
-          const intervalId = setInterval(() => {
-            const currentScroll = surveyContainer.scrollTop;
-            if (currentScroll > 100) {
-              // スクロール位置が変わった後、少し待ってから上に戻す
-              setTimeout(scrollToTop, 300);
-            }
-          }, 1000);
-
-          return () => clearInterval(intervalId);
-        }
-      }
-    }
-  }, [activeTab]);
-
   // 月歌生成開始ハンドラー
   const handleStartGeneration = () => {
     setShowWizard(true);
