@@ -55,6 +55,34 @@ const TsukiutaGenerator = () => {
     }
   };
 
+  // アンケートフォームのスクロール制御
+  React.useEffect(() => {
+    if (activeTab === 'survey') {
+      const surveyContainer = document.getElementById('survey-scroll-container');
+      if (surveyContainer) {
+        // iframeの読み込みを監視してスクロールイベントを設定
+        const iframe = surveyContainer.querySelector('iframe');
+        if (iframe) {
+          // Google Formのページ遷移を検知してスクロール
+          const scrollToTop = () => {
+            surveyContainer.scrollTo({ top: 0, behavior: 'smooth' });
+          };
+
+          // 一定間隔でチェック（Google Form内のボタンクリックを検知）
+          const intervalId = setInterval(() => {
+            const currentScroll = surveyContainer.scrollTop;
+            if (currentScroll > 100) {
+              // スクロール位置が変わった後、少し待ってから上に戻す
+              setTimeout(scrollToTop, 300);
+            }
+          }, 1000);
+
+          return () => clearInterval(intervalId);
+        }
+      }
+    }
+  }, [activeTab]);
+
   // 月歌生成開始ハンドラー
   const handleStartGeneration = () => {
     setShowWizard(true);
@@ -74,6 +102,24 @@ const TsukiutaGenerator = () => {
             <h2 className="text-3xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
               ポイント
             </h2>
+
+            {/* device_idがない場合のメッセージ */}
+            {!deviceId && (
+              <div className="mb-8 mx-auto max-w-md">
+                <div className="bg-gradient-to-br from-yellow-400/20 to-orange-400/20 backdrop-blur-md rounded-2xl p-6 border border-yellow-300/30 shadow-xl">
+                  <div className="text-center">
+                    <div className="text-6xl mb-4">🌙</div>
+                    <h3 className="text-xl font-bold text-yellow-300 mb-3">
+                      月灯を受け取りください
+                    </h3>
+                    <p className="text-white/80 text-sm leading-relaxed">
+                      月灯からIDを取得して、<br />
+                      ポイントを確認できます
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ポイントカード表示 */}
             <div className="mb-8">
@@ -99,7 +145,7 @@ const TsukiutaGenerator = () => {
             </div>
 
             {/* Google Form（スクロール可能） */}
-            <div className="flex-1 px-4 pb-4 overflow-y-auto">
+            <div id="survey-scroll-container" className="flex-1 px-4 pb-4 overflow-y-auto">
               <div className="max-w-3xl mx-auto">
                 <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden shadow-2xl border border-white/10">
                   <iframe
