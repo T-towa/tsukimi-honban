@@ -282,7 +282,7 @@ class TsukiutaModel {
   async fetchPlayerPoints(deviceId) {
     if (!this.isConfigured) {
       console.log('⚠️ Supabase未設定: ポイント取得をスキップします');
-      return 0;
+      return { points: 0, existsInDB: true };
     }
 
     try {
@@ -301,19 +301,19 @@ class TsukiutaModel {
         const data = await response.json();
         if (data && data.length > 0) {
           console.log('✅ ポイント取得成功:', data[0].points);
-          return data[0].points || 0;
+          return { points: data[0].points || 0, existsInDB: true };
         } else {
           console.log('⚠️ プレイヤーが見つかりません:', deviceId);
-          return 0;
+          return { points: 0, existsInDB: false };
         }
       } else {
         const errorText = await response.text();
         console.error('❌ ポイント取得エラー:', response.status, errorText);
-        return 0;
+        return { points: 0, existsInDB: true }; // エラー時はデフォルトで存在すると仮定
       }
     } catch (error) {
       console.error('❌ Error fetching player points:', error);
-      return 0;
+      return { points: 0, existsInDB: true }; // エラー時はデフォルトで存在すると仮定
     }
   }
 

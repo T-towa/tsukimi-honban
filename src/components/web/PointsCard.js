@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PointsCard = ({ points, isLoading, deviceId }) => {
+const PointsCard = ({ points, isLoading, deviceId, deviceIdExistsInDB }) => {
   // ポイントに応じた装飾レベルの説明
   const getDecorationLevel = (points) => {
     if (points === 0) return { level: 0, description: "ポイントがありません。体験コンテンツでポイントを集めましょう！" };
@@ -47,6 +47,22 @@ const PointsCard = ({ points, isLoading, deviceId }) => {
 
   if (!deviceId) {
     return null; // device_idがない場合は何も表示しない（TsukiutaGenerator側で案内を表示）
+  }
+
+  // DBに存在しないdevice_idの場合
+  if (deviceId && deviceIdExistsInDB === false) {
+    return (
+      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto border-2 border-red-400/50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h3 className="text-xl font-bold mb-3 text-red-300">デバイスIDが登録されていません</h3>
+          <p className="text-white/80 text-sm leading-relaxed">
+            月灯のNFCタグを<br />
+            もう一度読み取ってください
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

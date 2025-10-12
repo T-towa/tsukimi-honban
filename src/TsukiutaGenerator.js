@@ -32,6 +32,7 @@ const TsukiutaGenerator = () => {
     deviceId,
     userPoints,
     isLoadingPoints,
+    deviceIdExistsInDB,
 
     // アクション
     setCustomFeeling,
@@ -140,6 +141,7 @@ const TsukiutaGenerator = () => {
                 points={userPoints}
                 isLoading={isLoadingPoints}
                 deviceId={deviceId}
+                deviceIdExistsInDB={deviceIdExistsInDB}
               />
             </div>
           </div>
@@ -202,7 +204,10 @@ const TsukiutaGenerator = () => {
             />
 
             {generatedTsukiuta && generatedTsukiuta.isSent && (
-              <ShareSection tsukiuta={generatedTsukiuta} />
+              <ShareSection
+                tsukiuta={generatedTsukiuta}
+                onSurveyClick={() => handleTabChange('survey')}
+              />
             )}
           </>
         );

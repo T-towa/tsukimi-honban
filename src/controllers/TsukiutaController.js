@@ -27,6 +27,7 @@ export const useTsukiutaController = () => {
   const [deviceId, setDeviceId] = useState(null);
   const [userPoints, setUserPoints] = useState(0);
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+  const [deviceIdExistsInDB, setDeviceIdExistsInDB] = useState(true); // DBに存在するか
 
   // Model層のインスタンス
   const model = new TsukiutaModel();
@@ -66,12 +67,14 @@ export const useTsukiutaController = () => {
 
     setIsLoadingPoints(true);
     try {
-      const points = await model.fetchPlayerPoints(currentDeviceId);
-      setUserPoints(points);
+      const result = await model.fetchPlayerPoints(currentDeviceId);
+      setUserPoints(result.points);
+      setDeviceIdExistsInDB(result.existsInDB);
       setDeviceId(currentDeviceId);
     } catch (error) {
       console.error('ポイント取得エラー:', error);
       setUserPoints(0);
+      setDeviceIdExistsInDB(true);
     } finally {
       setIsLoadingPoints(false);
     }
@@ -97,8 +100,8 @@ export const useTsukiutaController = () => {
     const feelingsToUse = feelings || selectedFeelings;
     if (feelingsToUse.length === 0) return;
 
-    // ポイントチェック: 0ポイントの場合は生成不可
-    if (userPoints === 0) {
+    // ポイントチェック: device_idがある場合のみ0ポイントでエラー
+    if (deviceId && userPoints === 0) {
       alert('ポイントが0のため、月歌を送ることができません。\n体験コンテンツでポイントを集めてください。');
       return;
     }
@@ -130,13 +133,17 @@ export const useTsukiutaController = () => {
       // Supabaseに保存
       await saveTsukiutaToDatabase(generatedTsukiuta);
 
-      // ポイントをリセット（失敗時は月歌送信も失敗とする）
-      console.log('🔄 ポイントをリセット中...');
-      await resetUserPoints();
+      // device_idがある場合のみポイントをリセット
+      if (deviceId) {
+        console.log('🔄 ポイントをリセット中...');
+        await resetUserPoints();
 
-      // ポイントリセット後、DBから再取得して確認
-      console.log('🔄 ポイントを再取得して確認中...');
-      await fetchUserPoints();
+        // ポイントリセット後、DBから再取得して確認
+        console.log('🔄 ポイントを再取得して確認中...');
+        await fetchUserPoints();
+      } else {
+        console.log('⚠️ device_idなし: ポイントリセットをスキップ');
+      }
 
       // 送信済みフラグを更新
       setGeneratedTsukiuta({ ...generatedTsukiuta, isSent: true });
@@ -308,6 +315,7 @@ export const useTsukiutaController = () => {
     deviceId,
     userPoints,
     isLoadingPoints,
+    deviceIdExistsInDB,
 
     // アクション
     selectFeeling,

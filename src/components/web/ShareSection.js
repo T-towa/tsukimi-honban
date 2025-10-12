@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import QRCode from 'qrcode.react';
 
-const ShareSection = ({ tsukiuta }) => {
+const ShareSection = ({ tsukiuta, onSurveyClick }) => {
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -114,6 +114,27 @@ const ShareSection = ({ tsukiuta }) => {
             <p className="text-xs text-gray-600 mt-2">QRコードでアクセス</p>
           </div>
         )}
+      </div>
+
+      {/* アンケート誘導 */}
+      <div className="mt-6">
+        <div className="bg-gradient-to-br from-yellow-400/20 to-orange-400/20 backdrop-blur-md rounded-xl p-5 border border-yellow-300/30">
+          <div className="text-center mb-3">
+            <div className="text-3xl mb-2">📝</div>
+            <h4 className="text-lg font-bold text-yellow-300 mb-2">
+              体験のご感想をお聞かせください
+            </h4>
+            <p className="text-white/80 text-sm mb-4">
+              アンケートにご協力いただけると嬉しいです
+            </p>
+          </div>
+          <button
+            onClick={onSurveyClick}
+            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105"
+          >
+            アンケートに回答する →
+          </button>
+        </div>
       </div>
 
       {/* イベント案内 */}
