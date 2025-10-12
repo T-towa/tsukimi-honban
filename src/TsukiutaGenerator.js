@@ -113,16 +113,22 @@ const TsukiutaGenerator = () => {
             {/* device_idがない場合のメッセージ */}
             {!deviceId && (
               <div className="mb-8 mx-auto max-w-md">
-                <div className="bg-gradient-to-br from-yellow-400/20 to-orange-400/20 backdrop-blur-md rounded-2xl p-6 border border-yellow-300/30 shadow-xl">
+                <div className="bg-gradient-to-br from-purple-400/20 to-pink-400/20 backdrop-blur-md rounded-2xl p-6 border border-purple-300/30 shadow-xl">
                   <div className="text-center">
-                    <div className="text-6xl mb-4">🌙</div>
-                    <h3 className="text-xl font-bold text-yellow-300 mb-3">
-                      月灯を受け取りください
+                    <div className="text-6xl mb-4">✨</div>
+                    <h3 className="text-xl font-bold text-purple-300 mb-3">
+                      月歌の生成はこちら
                     </h3>
-                    <p className="text-white/80 text-sm leading-relaxed">
-                      月灯からIDを取得して、<br />
-                      ポイントを確認できます
+                    <p className="text-white/80 text-sm leading-relaxed mb-4">
+                      あなたの感想から<br />
+                      美しい月歌を作成できます
                     </p>
+                    <button
+                      onClick={() => handleTabChange('tsukiuta')}
+                      className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105"
+                    >
+                      月歌を作る →
+                    </button>
                   </div>
                 </div>
               </div>
