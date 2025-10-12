@@ -248,10 +248,10 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    // 全件の月歌を取得
-    console.log('🎲 Fetching all tsukiutas for random selection');
-    const allTsukiutasResponse = await fetch(
-      `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc`,
+    // まずis_sent_to_unity=falseの月歌を取得（未送信のもの優先）
+    console.log('🎲 Fetching unsent tsukiutas (is_sent_to_unity=false)');
+    const unsentResponse = await fetch(
+      `${supabaseUrl}/rest/v1/tsukiutas?is_sent_to_unity=eq.false&order=created_at.desc`,
       {
         headers: {
           'apikey': supabaseKey,
@@ -261,8 +261,8 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       }
     );
 
-    if (!allTsukiutasResponse.ok) {
-      const errorText = await allTsukiutasResponse.text();
+    if (!unsentResponse.ok) {
+      const errorText = await unsentResponse.text();
       console.error('Supabase fetch error:', errorText);
       return res.status(502).json({
         success: false,
@@ -271,8 +271,36 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    const allTsukiutas = await allTsukiutasResponse.json();
-    console.log(`✅ Fetched ${allTsukiutas.length} total tsukiutas`);
+    let allTsukiutas = await unsentResponse.json();
+    console.log(`✅ Fetched ${allTsukiutas.length} unsent tsukiutas`);
+
+    // 未送信の月歌がない場合は全件から取得
+    if (allTsukiutas.length === 0) {
+      console.log('⚠️ No unsent tsukiutas found, fetching all tsukiutas');
+      const allResponse = await fetch(
+        `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!allResponse.ok) {
+        const errorText = await allResponse.text();
+        console.error('Supabase fetch error:', errorText);
+        return res.status(502).json({
+          success: false,
+          error: 'Failed to fetch all tsukiutas',
+          message: errorText
+        });
+      }
+
+      allTsukiutas = await allResponse.json();
+      console.log(`✅ Fetched ${allTsukiutas.length} total tsukiutas as fallback`);
+    }
 
     // ランダムで5つ選択
     let tsukiutasToSend = [];
