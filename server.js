@@ -233,7 +233,7 @@ function cleanTsukiutaData(tsukiuta) {
   };
 }
 
-// Unity用: playersテーブルからランダムで5人のポイントを取得
+// Unity用: 全件からランダムで5つの月歌を取得し、ポイント情報も付与
 app.get('/api/get-pending-tsukiutas', async (req, res) => {
   try {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -248,8 +248,50 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    // playersテーブルから全てのプレイヤーを取得
-    console.log('🎲 Fetching all players for random selection');
+    // 全件の月歌を取得
+    console.log('🎲 Fetching all tsukiutas for random selection');
+    const allTsukiutasResponse = await fetch(
+      `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (!allTsukiutasResponse.ok) {
+      const errorText = await allTsukiutasResponse.text();
+      console.error('Supabase fetch error:', errorText);
+      return res.status(502).json({
+        success: false,
+        error: 'Failed to fetch tsukiutas',
+        message: errorText
+      });
+    }
+
+    const allTsukiutas = await allTsukiutasResponse.json();
+    console.log(`✅ Fetched ${allTsukiutas.length} total tsukiutas`);
+
+    // ランダムで5つ選択
+    let tsukiutasToSend = [];
+    if (allTsukiutas.length > 0) {
+      // Fisher-Yates シャッフルアルゴリズムでランダム選択
+      const shuffled = [...allTsukiutas];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      tsukiutasToSend = shuffled.slice(0, Math.min(5, shuffled.length));
+      console.log(`🎲 Randomly selected ${tsukiutasToSend.length} tsukiutas`);
+    }
+
+    // データをクリーニング
+    const cleanedTsukiutas = tsukiutasToSend.map(cleanTsukiutaData);
+
+    // playersテーブルから全プレイヤーのポイントを取得
+    console.log('📊 Fetching all players points');
     const playersResponse = await fetch(
       `${supabaseUrl}/rest/v1/players?select=device_id,points`,
       {
@@ -261,45 +303,44 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       }
     );
 
-    if (!playersResponse.ok) {
-      const errorText = await playersResponse.text();
-      console.error('Supabase fetch error:', errorText);
-      return res.status(502).json({
-        success: false,
-        error: 'Failed to fetch players',
-        message: errorText
+    let playersMap = new Map();
+    if (playersResponse.ok) {
+      const players = await playersResponse.json();
+      players.forEach(player => {
+        playersMap.set(player.device_id, player.points || 0);
       });
+      console.log(`✅ Fetched ${players.length} players points`);
     }
 
-    const allPlayers = await playersResponse.json();
-    console.log(`✅ Fetched ${allPlayers.length} total players`);
+    // 各月歌にランダムなプレイヤーのポイント情報を付与
+    const tsukiutasWithPoints = cleanedTsukiutas.map((tsukiuta) => {
+      // playersMapからランダムに1人選択
+      const playerEntries = Array.from(playersMap.entries());
+      let userPoints = 0;
+      let deviceId = null;
 
-    // ランダムで5人選択
-    let playersToSend = [];
-    if (allPlayers.length > 0) {
-      // Fisher-Yates シャッフルアルゴリズムでランダム選択
-      const shuffled = [...allPlayers];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      if (playerEntries.length > 0) {
+        const randomIndex = Math.floor(Math.random() * playerEntries.length);
+        const [selectedDeviceId, selectedPoints] = playerEntries[randomIndex];
+        deviceId = selectedDeviceId;
+        userPoints = selectedPoints;
       }
-      playersToSend = shuffled.slice(0, Math.min(5, shuffled.length));
-      console.log(`🎲 Randomly selected ${playersToSend.length} players`);
-    }
 
-    // プレイヤー情報を整形
-    const playersWithPoints = playersToSend.map(player => ({
-      device_id: player.device_id,
-      user_points: player.points || 0
-    }));
+      return {
+        ...tsukiuta,
+        device_id: deviceId,
+        user_points: userPoints
+      };
+    });
 
-    console.log(`✅ Unity用にランダム選択した${playersWithPoints.length}件のプレイヤー情報（ポイント付き）を送信`);
+    console.log(`✅ Added points information to ${tsukiutasWithPoints.length} tsukiutas`);
+    console.log(`✅ Unity用にランダム選択した${tsukiutasWithPoints.length}件の月歌（ポイント付き）を送信`);
 
     return res.json({
       success: true,
-      count: playersWithPoints.length,
-      players: playersWithPoints,
-      message: `${playersWithPoints.length} random players with points sent to Unity`,
+      count: tsukiutasWithPoints.length,
+      tsukiutas: tsukiutasWithPoints,
+      message: `${tsukiutasWithPoints.length} random tsukiutas with points sent to Unity`,
       isRandomSelection: true
     });
 
