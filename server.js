@@ -233,11 +233,10 @@ function cleanTsukiutaData(tsukiuta) {
   };
 }
 
-// Unity用: 未送信の月歌を取得してis_sent_to_unityを更新
+// Unity用: 全件からランダムで5つの月歌を取得
 app.get('/api/get-pending-tsukiutas', async (req, res) => {
   try {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-    // Unity API用にはservice_role_keyを使用（より強い権限でUPDATE可能）
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
     const usingServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
     console.log(`🔑 Using ${usingServiceRole ? 'SERVICE_ROLE' : 'ANON'} key for Supabase operations`);
@@ -249,80 +248,43 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    // まずis_sent_to_unityフィールドが存在するかチェック
-    let pendingTsukiutas;
-    let usesSentFlag = false;
-
-    try {
-      // is_sent_to_unity = false の月歌を取得を試行
-      const fetchResponse = await fetch(
-        `${supabaseUrl}/rest/v1/tsukiutas?is_sent_to_unity=eq.false&order=created_at.asc&limit=10`,
-        {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json'
-          }
+    // 全件の月歌を取得
+    console.log('🎲 Fetching all tsukiutas for random selection');
+    const allTsukiutasResponse = await fetch(
+      `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
         }
-      );
-
-      if (fetchResponse.ok) {
-        pendingTsukiutas = await fetchResponse.json();
-        usesSentFlag = true;
-      } else {
-        throw new Error('Field may not exist');
       }
-    } catch (fieldError) {
-      // is_sent_to_unityフィールドが存在しない場合、最新10件を取得
-      console.log('⚠️ is_sent_to_unity field not found, fetching latest 10 tsukiutas');
-      const fallbackResponse = await fetch(
-        `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc&limit=10`,
-        {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+    );
 
-      if (!fallbackResponse.ok) {
-        const errorText = await fallbackResponse.text();
-        console.error('Supabase fetch error:', errorText);
-        return res.status(502).json({
-          success: false,
-          error: 'Failed to fetch tsukiutas',
-          message: errorText
-        });
-      }
-
-      pendingTsukiutas = await fallbackResponse.json();
+    if (!allTsukiutasResponse.ok) {
+      const errorText = await allTsukiutasResponse.text();
+      console.error('Supabase fetch error:', errorText);
+      return res.status(502).json({
+        success: false,
+        error: 'Failed to fetch tsukiutas',
+        message: errorText
+      });
     }
 
-    // 未送信の月歌が0件の場合でも直近10件を取得
-    let tsukiutasToSend = pendingTsukiutas;
-    let shouldReturn204 = false;
+    const allTsukiutas = await allTsukiutasResponse.json();
+    console.log(`✅ Fetched ${allTsukiutas.length} total tsukiutas`);
 
-    if (pendingTsukiutas.length === 0) {
-      console.log('📭 No pending tsukiutas found - fetching latest 10 for 204 response');
-      shouldReturn204 = true;
-
-      // 直近10件を取得
-      const recentResponse = await fetch(
-        `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc&limit=10`,
-        {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (recentResponse.ok) {
-        tsukiutasToSend = await recentResponse.json();
-        console.log(`✅ Fetched ${tsukiutasToSend.length} recent tsukiutas for 204 response`);
+    // ランダムで5つ選択
+    let tsukiutasToSend = [];
+    if (allTsukiutas.length > 0) {
+      // Fisher-Yates シャッフルアルゴリズムでランダム選択
+      const shuffled = [...allTsukiutas];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
+      tsukiutasToSend = shuffled.slice(0, Math.min(5, shuffled.length));
+      console.log(`🎲 Randomly selected ${tsukiutasToSend.length} tsukiutas`);
     }
 
     // データをクリーニング
@@ -365,65 +327,14 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
     );
 
     console.log(`✅ Added points information to ${tsukiutasWithPoints.length} tsukiutas`);
-
-    // is_sent_to_unityフィールドが存在する場合のみ更新
-    if (usesSentFlag && !shouldReturn204) {
-      const tsukiutaIds = pendingTsukiutas.map(t => t.id);
-      console.log(`🔄 Updating ${tsukiutaIds.length} tsukiutas to is_sent_to_unity=true, IDs: ${tsukiutaIds.join(',')}`);
-
-      const updateUrl = `${supabaseUrl}/rest/v1/tsukiutas?id=in.(${tsukiutaIds.join(',')})`;
-      const updateBody = {
-        is_sent_to_unity: true,
-        sent_to_unity_at: new Date().toISOString()
-      };
-      
-      console.log(`📡 UPDATE URL: ${updateUrl}`);
-      console.log(`📦 UPDATE Body:`, updateBody);
-      console.log(`🔑 Using key type: ${usingServiceRole ? 'SERVICE_ROLE' : 'ANON'}`);
-
-      const updateResponse = await fetch(updateUrl, {
-        method: 'PATCH',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(updateBody)
-      });
-
-      if (!updateResponse.ok) {
-        const errorText = await updateResponse.text();
-        console.error('❌ Supabase update error:', updateResponse.status, errorText);
-        // 更新失敗でもデータは返す
-      } else {
-        const updateResult = await updateResponse.json();
-        console.log(`✅ Successfully updated ${updateResult.length} tsukiutas to is_sent_to_unity=true`);
-      }
-    } else {
-      console.log('⚠️ is_sent_to_unity field not available, skipping update');
-    }
-
-    console.log(`✅ Unity用に${tsukiutasWithPoints.length}件の月歌を送信 (送信フラグ: ${usesSentFlag ? '使用' : '未使用'})`);
-
-    // 204を返す場合でもデータは含める
-    if (shouldReturn204) {
-      console.log(`📭 Returning 204 with ${tsukiutasWithPoints.length} recent tsukiutas`);
-      return res.status(204).json({
-        success: true,
-        count: tsukiutasWithPoints.length,
-        tsukiutas: tsukiutasWithPoints,
-        message: `No new tsukiutas, returning ${tsukiutasWithPoints.length} recent entries`,
-        usesSentFlag: usesSentFlag
-      });
-    }
+    console.log(`✅ Unity用にランダム選択した${tsukiutasWithPoints.length}件の月歌（ポイント付き）を送信`);
 
     return res.json({
       success: true,
       count: tsukiutasWithPoints.length,
       tsukiutas: tsukiutasWithPoints,
-      message: `${tsukiutasWithPoints.length} tsukiutas sent to Unity`,
-      usesSentFlag: usesSentFlag
+      message: `${tsukiutasWithPoints.length} random tsukiutas with points sent to Unity`,
+      isRandomSelection: true
     });
 
   } catch (error) {
