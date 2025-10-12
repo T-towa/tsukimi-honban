@@ -46,15 +46,7 @@ const PointsCard = ({ points, isLoading, deviceId }) => {
   }
 
   if (!deviceId) {
-    return (
-      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-md mx-auto border-2 border-yellow-400/50">
-        <div className="text-6xl mb-4">⚠️</div>
-        <h3 className="text-xl font-bold mb-2 text-yellow-300">デバイスIDが見つかりません</h3>
-        <p className="text-white/70 text-sm">
-          NFCタグをスキャンしてアクセスしてください
-        </p>
-      </div>
-    );
+    return null; // device_idがない場合は何も表示しない（TsukiutaGenerator側で案内を表示）
   }
 
   return (
