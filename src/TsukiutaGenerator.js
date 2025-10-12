@@ -232,12 +232,14 @@ const TsukiutaGenerator = () => {
         onTabChange={handleTabChange}
       />
 
-      {/* デバッグパネル */}
-      <DebugPanel
-        currentDeviceId={deviceId}
-        onDeviceIdChange={handleDebugDeviceIdChange}
-        onRefreshPoints={fetchUserPoints}
-      />
+      {/* デバッグパネル（本番環境では非表示） */}
+      {process.env.NODE_ENV === 'development' && (
+        <DebugPanel
+          currentDeviceId={deviceId}
+          onDeviceIdChange={handleDebugDeviceIdChange}
+          onRefreshPoints={fetchUserPoints}
+        />
+      )}
 
       <style jsx>{`
         @keyframes fade-in {
