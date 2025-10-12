@@ -180,7 +180,7 @@ const TsukiutaGenerator = () => {
             <TsukiutaIntro
               onStartGeneration={handleStartGeneration}
               userPoints={userPoints}
-              isDisabled={userPoints === 0}
+              isDisabled={deviceId && userPoints === 0}
             />
           );
         }
