@@ -233,7 +233,7 @@ function cleanTsukiutaData(tsukiuta) {
   };
 }
 
-// Unity用: 全件からランダムで5つの月歌を取得
+// Unity用: playersテーブルからランダムで5人のポイントを取得
 app.get('/api/get-pending-tsukiutas', async (req, res) => {
   try {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -248,10 +248,10 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       });
     }
 
-    // 全件の月歌を取得
-    console.log('🎲 Fetching all tsukiutas for random selection');
-    const allTsukiutasResponse = await fetch(
-      `${supabaseUrl}/rest/v1/tsukiutas?order=created_at.desc`,
+    // playersテーブルから全てのプレイヤーを取得
+    console.log('🎲 Fetching all players for random selection');
+    const playersResponse = await fetch(
+      `${supabaseUrl}/rest/v1/players?select=device_id,points`,
       {
         headers: {
           'apikey': supabaseKey,
@@ -261,79 +261,45 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
       }
     );
 
-    if (!allTsukiutasResponse.ok) {
-      const errorText = await allTsukiutasResponse.text();
+    if (!playersResponse.ok) {
+      const errorText = await playersResponse.text();
       console.error('Supabase fetch error:', errorText);
       return res.status(502).json({
         success: false,
-        error: 'Failed to fetch tsukiutas',
+        error: 'Failed to fetch players',
         message: errorText
       });
     }
 
-    const allTsukiutas = await allTsukiutasResponse.json();
-    console.log(`✅ Fetched ${allTsukiutas.length} total tsukiutas`);
+    const allPlayers = await playersResponse.json();
+    console.log(`✅ Fetched ${allPlayers.length} total players`);
 
-    // ランダムで5つ選択
-    let tsukiutasToSend = [];
-    if (allTsukiutas.length > 0) {
+    // ランダムで5人選択
+    let playersToSend = [];
+    if (allPlayers.length > 0) {
       // Fisher-Yates シャッフルアルゴリズムでランダム選択
-      const shuffled = [...allTsukiutas];
+      const shuffled = [...allPlayers];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
-      tsukiutasToSend = shuffled.slice(0, Math.min(5, shuffled.length));
-      console.log(`🎲 Randomly selected ${tsukiutasToSend.length} tsukiutas`);
+      playersToSend = shuffled.slice(0, Math.min(5, shuffled.length));
+      console.log(`🎲 Randomly selected ${playersToSend.length} players`);
     }
 
-    // データをクリーニング
-    const cleanedTsukiutas = tsukiutasToSend.map(cleanTsukiutaData);
+    // プレイヤー情報を整形
+    const playersWithPoints = playersToSend.map(player => ({
+      device_id: player.device_id,
+      user_points: player.points || 0
+    }));
 
-    // 各月歌に対応するユーザーのポイント情報を取得
-    const tsukiutasWithPoints = await Promise.all(
-      cleanedTsukiutas.map(async (tsukiuta) => {
-        let userPoints = 0;
-
-        if (tsukiuta.device_id) {
-          try {
-            const pointsResponse = await fetch(
-              `${supabaseUrl}/rest/v1/players?device_id=eq.${encodeURIComponent(tsukiuta.device_id)}&select=points`,
-              {
-                headers: {
-                  'apikey': supabaseKey,
-                  'Authorization': `Bearer ${supabaseKey}`,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
-
-            if (pointsResponse.ok) {
-              const playersData = await pointsResponse.json();
-              if (playersData && playersData.length > 0) {
-                userPoints = playersData[0].points || 0;
-              }
-            }
-          } catch (error) {
-            console.error(`⚠️ Failed to fetch points for device_id ${tsukiuta.device_id}:`, error);
-          }
-        }
-
-        return {
-          ...tsukiuta,
-          user_points: userPoints
-        };
-      })
-    );
-
-    console.log(`✅ Added points information to ${tsukiutasWithPoints.length} tsukiutas`);
-    console.log(`✅ Unity用にランダム選択した${tsukiutasWithPoints.length}件の月歌（ポイント付き）を送信`);
+    console.log(`✅ Unity用にランダム選択した${playersWithPoints.length}件のプレイヤー情報（ポイント付き）を送信`);
 
     return res.json({
       success: true,
-      count: tsukiutasWithPoints.length,
-      tsukiutas: tsukiutasWithPoints,
-      message: `${tsukiutasWithPoints.length} random tsukiutas with points sent to Unity`,
+      count: playersWithPoints.length,
+      players: playersWithPoints,
+      message: `${playersWithPoints.length} random players with points sent to Unity`,
       isRandomSelection: true
     });
 

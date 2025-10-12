@@ -176,20 +176,19 @@ const DebugPanel = ({ currentDeviceId, onDeviceIdChange, onRefreshPoints }) => {
                   {unityApiResult.data && (
                     <>
                       <div className="text-white/60">件数: {unityApiResult.data.count || 0}</div>
-                      {unityApiResult.data.tsukiutas && unityApiResult.data.tsukiutas.length > 0 && (
+                      {unityApiResult.data.players && unityApiResult.data.players.length > 0 && (
                         <div className="mt-2 text-white/80">
-                          <div className="font-semibold mb-1">送信された月歌:</div>
-                          {unityApiResult.data.tsukiutas.map((t, i) => (
+                          <div className="font-semibold mb-1">送信されたプレイヤー:</div>
+                          {unityApiResult.data.players.map((p, i) => (
                             <div key={i} className="ml-2 text-xs border-l-2 border-purple-500 pl-2 py-1 space-y-1">
-                              <div className="text-white/90">{t.tsukiuta}</div>
-                              {t.device_id && (
+                              {p.device_id && (
                                 <div className="text-blue-300 text-xs">
-                                  Device: {t.device_id.substring(0, 17)}...
+                                  Device: {p.device_id.substring(0, 17)}...
                                 </div>
                               )}
-                              {t.user_points !== undefined && (
+                              {p.user_points !== undefined && (
                                 <div className="text-yellow-300 text-xs font-semibold">
-                                  ⭐ ポイント: {t.user_points}
+                                  ⭐ ポイント: {p.user_points}
                                 </div>
                               )}
                             </div>
