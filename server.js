@@ -233,7 +233,7 @@ function cleanTsukiutaData(tsukiuta) {
   };
 }
 
-// Unity用: 全件からランダムで5つの月歌を取得し、ポイント情報も付与
+// Unity用: 全件からランダムで5つの月歌を取得
 app.get('/api/get-pending-tsukiutas', async (req, res) => {
   try {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -290,57 +290,13 @@ app.get('/api/get-pending-tsukiutas', async (req, res) => {
     // データをクリーニング
     const cleanedTsukiutas = tsukiutasToSend.map(cleanTsukiutaData);
 
-    // playersテーブルから全プレイヤーのポイントを取得
-    console.log('📊 Fetching all players points');
-    const playersResponse = await fetch(
-      `${supabaseUrl}/rest/v1/players?select=device_id,points`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    let playersMap = new Map();
-    if (playersResponse.ok) {
-      const players = await playersResponse.json();
-      players.forEach(player => {
-        playersMap.set(player.device_id, player.points || 0);
-      });
-      console.log(`✅ Fetched ${players.length} players points`);
-    }
-
-    // 各月歌にランダムなプレイヤーのポイント情報を付与
-    const tsukiutasWithPoints = cleanedTsukiutas.map((tsukiuta) => {
-      // playersMapからランダムに1人選択
-      const playerEntries = Array.from(playersMap.entries());
-      let userPoints = 0;
-      let deviceId = null;
-
-      if (playerEntries.length > 0) {
-        const randomIndex = Math.floor(Math.random() * playerEntries.length);
-        const [selectedDeviceId, selectedPoints] = playerEntries[randomIndex];
-        deviceId = selectedDeviceId;
-        userPoints = selectedPoints;
-      }
-
-      return {
-        ...tsukiuta,
-        device_id: deviceId,
-        user_points: userPoints
-      };
-    });
-
-    console.log(`✅ Added points information to ${tsukiutasWithPoints.length} tsukiutas`);
-    console.log(`✅ Unity用にランダム選択した${tsukiutasWithPoints.length}件の月歌（ポイント付き）を送信`);
+    console.log(`✅ Unity用にランダム選択した${cleanedTsukiutas.length}件の月歌を送信`);
 
     return res.json({
       success: true,
-      count: tsukiutasWithPoints.length,
-      tsukiutas: tsukiutasWithPoints,
-      message: `${tsukiutasWithPoints.length} random tsukiutas with points sent to Unity`,
+      count: cleanedTsukiutas.length,
+      tsukiutas: cleanedTsukiutas,
+      message: `${cleanedTsukiutas.length} random tsukiutas sent to Unity`,
       isRandomSelection: true
     });
 

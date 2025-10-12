@@ -180,18 +180,8 @@ const DebugPanel = ({ currentDeviceId, onDeviceIdChange, onRefreshPoints }) => {
                         <div className="mt-2 text-white/80">
                           <div className="font-semibold mb-1">送信された月歌:</div>
                           {unityApiResult.data.tsukiutas.map((t, i) => (
-                            <div key={i} className="ml-2 text-xs border-l-2 border-purple-500 pl-2 py-1 space-y-1">
+                            <div key={i} className="ml-2 text-xs border-l-2 border-purple-500 pl-2 py-1">
                               <div className="text-white/90">{t.tsukiuta}</div>
-                              {t.device_id && (
-                                <div className="text-blue-300 text-xs">
-                                  Device: {t.device_id.substring(0, 17)}...
-                                </div>
-                              )}
-                              {t.user_points !== undefined && (
-                                <div className="text-yellow-300 text-xs font-semibold">
-                                  ⭐ ポイント: {t.user_points}
-                                </div>
-                              )}
                             </div>
                           ))}
                         </div>
