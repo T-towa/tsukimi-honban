@@ -3,7 +3,6 @@ import { useTsukiutaController } from './controllers/TsukiutaController';
 import Header from './components/web/Header';
 import WizardForm from './components/web/WizardForm';
 import TsukiutaIntro from './components/web/TsukiutaIntro';
-import ShareSection from './components/web/ShareSection';
 import BottomTabs from './components/web/BottomTabs';
 import PointsCard from './components/web/PointsCard';
 import DebugPanel from './components/web/DebugPanel';
@@ -202,13 +201,6 @@ const TsukiutaGenerator = () => {
               onSendToMoon={sendTsukiutaToMoon}
               isSending={isSaving}
             />
-
-            {generatedTsukiuta && generatedTsukiuta.isSent && (
-              <ShareSection
-                tsukiuta={generatedTsukiuta}
-                onSurveyClick={() => handleTabChange('survey')}
-              />
-            )}
           </>
         );
       default:

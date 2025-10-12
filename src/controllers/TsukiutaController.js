@@ -194,9 +194,15 @@ export const useTsukiutaController = () => {
       return;
     }
 
+    // device_idを追加
+    const dataWithDeviceId = {
+      ...tsukiutaData,
+      device_id: deviceId || null
+    };
+
     setIsSaving(true);
     try {
-      const savedData = await model.saveTsukiuta(tsukiutaData);
+      const savedData = await model.saveTsukiuta(dataWithDeviceId);
 
       if (savedData && savedData.id) {
         console.log(`✅ 月歌がデータベースに保存されました (ID: ${savedData.id})`);
