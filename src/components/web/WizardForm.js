@@ -7,7 +7,8 @@ const WizardForm = ({
   onGenerate,
   onReset,
   onSendToMoon,
-  isSending = false
+  isSending = false,
+  onSurveyClick
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [stepData, setStepData] = useState({
@@ -493,6 +494,29 @@ const WizardForm = ({
               </>
             )}
           </button>
+
+          {/* アンケートボタン（送信後のみ表示） */}
+          {generatedTsukiuta.isSent && onSurveyClick && (
+            <div className="mt-6">
+              <div className="bg-gradient-to-br from-yellow-400/20 to-orange-400/20 backdrop-blur-md rounded-xl p-5 border border-yellow-300/30">
+                <div className="text-center mb-3">
+                  <div className="text-3xl mb-2">📝</div>
+                  <h4 className="text-lg font-bold text-yellow-300 mb-2">
+                    体験のご感想をお聞かせください
+                  </h4>
+                  <p className="text-white/80 text-sm mb-4">
+                    アンケートにご協力いただけると嬉しいです
+                  </p>
+                </div>
+                <button
+                  onClick={onSurveyClick}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105"
+                >
+                  アンケートに回答する →
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 新しい月歌を作るボタン */}
           <button

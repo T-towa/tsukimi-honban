@@ -55,6 +55,11 @@ const TsukiutaGenerator = () => {
     }
   };
 
+  // アンケートタブへ移動
+  const handleSurveyClick = () => {
+    handleTabChange('survey');
+  };
+
   // アンケートフォームのページ遷移検知
   React.useEffect(() => {
     if (activeTab === 'survey') {
@@ -200,6 +205,7 @@ const TsukiutaGenerator = () => {
               onReset={handleResetToIntro}
               onSendToMoon={sendTsukiutaToMoon}
               isSending={isSaving}
+              onSurveyClick={handleSurveyClick}
             />
           </>
         );
